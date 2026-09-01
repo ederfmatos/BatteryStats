@@ -121,6 +121,7 @@
     <string name="diagnostics_android">Android</string>
     <string name="diagnostics_samples">Amostras no banco</string>
     <string name="diagnostics_gaps">Buracos de amostragem (24h)</string>
+    <string name="diagnostics_windows">Janelas de medição</string>
     <string name="diagnostics_calibration">Calibração de CURRENT_NOW</string>
     <string name="diagnostics_calibration_value">Divisor %1$d · sinal %2$s · origem %3$s (%4$d janelas)</string>
     <string name="diagnostics_sign_normal">documentado</string>
@@ -147,4 +148,21 @@
     <string name="settings_export_done">Arquivo salvo.</string>
     <string name="settings_export_failed">Não foi possível salvar o arquivo.</string>
     <string name="settings_retention">Amostras cruas são apagadas depois de 14 dias. Os resumos diários ficam para sempre.</string>
+
+    <!-- Cobertura e confiança (Fase 7) -->
+    <string name="coverage_label">Cobertura da medição</string>
+    <string name="coverage_value">medido %1$d%% das últimas %2$s</string>
+    <string name="coverage_period_24h">24h</string>
+    <string name="coverage_period_7d">7 dias</string>
+    <string name="coverage_gaps">%1$d buracos, %2$s sem medição</string>
+    <string name="coverage_poor">Cobertura baixa. Os números abaixo valem só para o tempo em que o app estava medindo.</string>
+    <string name="drain_range">%1$.0f–%2$.0f mA</string>
+    <string name="drain_low_confidence">valor grosseiro</string>
+    <string name="quantization_label">Degrau do contador</string>
+    <string name="quantization_value">%1$s µAh (±%2$.0f mA em %3$s)</string>
+    <string name="quantization_none">não detectado ainda</string>
+    <string name="windows_confidence">%1$d janelas, %2$d de alta confiança</string>
+    <string name="fg_reason_no_permission">sem permissão de uso</string>
+    <string name="fg_reason_gap">buraco de medição</string>
+    <string name="fg_reason_screen_off">tela desligada</string>
 </resources>

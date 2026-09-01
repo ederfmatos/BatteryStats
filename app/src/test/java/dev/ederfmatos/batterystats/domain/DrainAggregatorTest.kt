@@ -1,7 +1,7 @@
 package dev.ederfmatos.batterystats.domain
 
 import dev.ederfmatos.batterystats.domain.drain.DrainAggregator
-import dev.ederfmatos.batterystats.domain.drain.DrainCalculator
+import dev.ederfmatos.batterystats.domain.drain.AdaptiveWindowBuilder
 import dev.ederfmatos.batterystats.domain.drain.DrainSource
 import dev.ederfmatos.batterystats.domain.drain.DrainWindow
 import dev.ederfmatos.batterystats.domain.drain.RuntimeProjector
@@ -11,6 +11,7 @@ import dev.ederfmatos.batterystats.domain.model.CurrentCalibration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -75,7 +76,7 @@ class DrainAggregatorTest {
     }
 
     @Test
-    fun `linha de base de repouso sai das janelas de tela desligada`() {
+    fun `linha de base de repouso sai das janelas longas de tela desligada`() {
         val windows = (0 until 10).map { index ->
             window(
                 startMs = BASE_MS + index * 10 * MINUTE_MS,
@@ -93,9 +94,8 @@ class DrainAggregatorTest {
 
     @Test
     fun `projecao usa o padrao das ultimas horas e nao o ultimo minuto`() {
-        val calculator = DrainCalculator()
         val samples = dischargeSeries(count = 30, drainMilliAmps = 200.0)
-        val analysis = calculator.analyze(samples, CurrentCalibration(divisor = 1000))
+        val analysis = AdaptiveWindowBuilder().analyze(samples)
         val stats = aggregator.aggregate(analysis.windows)
 
         val projection = RuntimeProjector().project(
@@ -138,5 +138,37 @@ class DrainAggregatorTest {
         val stats = aggregator.aggregate(windows)
 
         assertFalse(WakelockSuspicionDetector().isSuspicious(stats))
+    }
+
+    @Test
+    fun `janelas curtas ficam fora da linha de base de repouso`() {
+        // Abaixo de 300s a quantização domina: um zero de arredondamento viraria a baseline.
+        val curtas = (0 until 10).map { index ->
+            window(
+                startMs = BASE_MS + index * MINUTE_MS,
+                durationMs = MINUTE_MS,
+                milliAmps = 1.0,
+                screen = ScreenRegime.OFF,
+            )
+        }
+
+        val stats = aggregator.aggregate(curtas)
+
+        assertNull(stats.idleBaselineMilliAmps)
+    }
+
+    @Test
+    fun `regime sem nenhuma janela de alta confianca e marcado como grosseiro`() {
+        val windows = listOf(
+            window(BASE_MS, 5 * MINUTE_MS, 50.0, ScreenRegime.OFF).copy(
+                lowConfidence = true,
+                quantizationStepUah = 4076L,
+            ),
+        )
+
+        val stats = aggregator.aggregate(windows)
+
+        assertTrue(stats.screenOff.isCoarse)
+        assertTrue(stats.screenOff.rangeHighMilliAmps > stats.screenOff.averageMilliAmps)
     }
 }

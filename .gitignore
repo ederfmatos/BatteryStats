@@ -9,5 +9,4 @@ captures/
 .cxx/
 *.apk
 *.keystore
-schemas/
 .kotlin/

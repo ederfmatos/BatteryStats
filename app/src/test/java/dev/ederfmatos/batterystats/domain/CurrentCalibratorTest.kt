@@ -15,7 +15,7 @@ class CurrentCalibratorTest {
     @Test
     fun `aparelho em microamperes com sinal documentado`() {
         val samples = dischargeSeries(
-            count = 12,
+            count = 60,
             drainMilliAmps = 300.0,
             currentMultiplier = 1000L,
             currentSign = -1L,
@@ -31,7 +31,7 @@ class CurrentCalibratorTest {
     @Test
     fun `aparelho que reporta em miliamperes`() {
         val samples = dischargeSeries(
-            count = 12,
+            count = 60,
             drainMilliAmps = 300.0,
             currentMultiplier = 1L,
             currentSign = -1L,
@@ -45,7 +45,7 @@ class CurrentCalibratorTest {
     @Test
     fun `aparelho com o sinal invertido`() {
         val samples = dischargeSeries(
-            count = 12,
+            count = 60,
             drainMilliAmps = 300.0,
             currentMultiplier = 1000L,
             currentSign = 1L,
@@ -73,6 +73,30 @@ class CurrentCalibratorTest {
     @Test
     fun `poucas janelas nao geram calibracao`() {
         val samples = dischargeSeries(count = 3, drainMilliAmps = 300.0)
+
+        assertNull(calibrator.calibrate(samples))
+    }
+
+    @Test
+    fun `reproduz o aparelho real que reporta em miliamperes`() {
+        // Razão mediana raw/derivado medida em campo: 1,07 — ou seja, mA, não µA.
+        val samples = quantizedDischargeSeries(
+            count = 90,
+            drainMilliAmps = 800.0,
+            currentNowRaw = -856L,
+            screenOn = true,
+        )
+
+        val calibration = calibrator.calibrate(samples)
+
+        assertEquals(1, calibration?.divisor)
+        assertFalse(calibration?.inverted ?: true)
+    }
+
+    @Test
+    fun `janelas de baixa confianca nao entram na calibracao`() {
+        // 20 mA: toda janela fecha por tempo com um degrau só. Nada confiável para comparar.
+        val samples = quantizedDischargeSeries(count = 60, drainMilliAmps = 20.0)
 
         assertNull(calibrator.calibrate(samples))
     }

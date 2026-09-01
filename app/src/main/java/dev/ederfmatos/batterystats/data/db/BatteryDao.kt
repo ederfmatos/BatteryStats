@@ -27,6 +27,9 @@ interface BatteryDao {
     @Query("SELECT * FROM battery_sample ORDER BY timestampMs DESC LIMIT 1")
     fun latestSample(): Flow<BatterySampleEntity?>
 
+    @Query("SELECT * FROM battery_sample ORDER BY timestampMs DESC LIMIT 1")
+    suspend fun latestSampleOnce(): BatterySampleEntity?
+
     @Query("SELECT COUNT(*) FROM battery_sample")
     fun sampleCount(): Flow<Int>
 
@@ -35,6 +38,21 @@ interface BatteryDao {
 
     @Query("DELETE FROM battery_sample WHERE timestampMs < :beforeMs")
     suspend fun deleteSamplesBefore(beforeMs: Long): Int
+
+    @Insert
+    suspend fun insertGap(gap: MeasurementGapEntity): Long
+
+    @Query("SELECT * FROM measurement_gap WHERE endMs >= :fromMs ORDER BY startMs ASC")
+    suspend fun gapsSince(fromMs: Long): List<MeasurementGapEntity>
+
+    @Query("SELECT * FROM measurement_gap ORDER BY startMs ASC")
+    suspend fun allGaps(): List<MeasurementGapEntity>
+
+    @Query("SELECT COUNT(*) FROM measurement_gap WHERE startMs >= :fromMs AND reason = :reason")
+    fun gapCountSince(fromMs: Long, reason: String): Flow<Int>
+
+    @Query("DELETE FROM measurement_gap WHERE endMs < :beforeMs")
+    suspend fun deleteGapsBefore(beforeMs: Long): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertDailyAggregate(aggregate: DailyAggregateEntity)

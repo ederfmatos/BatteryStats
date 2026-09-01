@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dev.ederfmatos.batterystats.domain.model.CurrentCalibration
@@ -30,6 +31,12 @@ data class AppSettings(
     val samplingInterval: SamplingInterval = SamplingInterval.DEFAULT,
     val startOnBoot: Boolean = false,
     val calibration: CurrentCalibration = CurrentCalibration.DEFAULT,
+    /** Degrau de quantização do CHARGE_COUNTER detectado neste aparelho, em µAh. */
+    val quantizationStepUah: Long = 0L,
+    /** Marca d'água do último evento de uso já processado, para não reconsultar o passado. */
+    val lastProcessedEventMs: Long = 0L,
+    /** Último app visto em primeiro plano; sobrevive a reinícios do serviço. */
+    val lastKnownForegroundPackage: String? = null,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("settings")
@@ -54,7 +61,25 @@ class SettingsRepository(context: Context) {
                     ?: CurrentCalibration.Source.DEFAULT,
                 sampleCount = prefs[KEY_CALIBRATION_SAMPLES] ?: 0,
             ),
+            quantizationStepUah = prefs[KEY_QUANTIZATION_STEP_UAH] ?: 0L,
+            lastProcessedEventMs = prefs[KEY_LAST_EVENT_MS] ?: 0L,
+            lastKnownForegroundPackage = prefs[KEY_LAST_FOREGROUND_PACKAGE],
         )
+    }
+
+    suspend fun setQuantizationStepUah(stepUah: Long) {
+        store.edit { it[KEY_QUANTIZATION_STEP_UAH] = stepUah }
+    }
+
+    suspend fun setForegroundWatermark(lastEventMs: Long, lastPackage: String?) {
+        store.edit { prefs ->
+            prefs[KEY_LAST_EVENT_MS] = lastEventMs
+            if (lastPackage == null) {
+                prefs.remove(KEY_LAST_FOREGROUND_PACKAGE)
+            } else {
+                prefs[KEY_LAST_FOREGROUND_PACKAGE] = lastPackage
+            }
+        }
     }
 
     suspend fun setSamplingInterval(interval: SamplingInterval) {
@@ -82,5 +107,8 @@ class SettingsRepository(context: Context) {
         val KEY_CALIBRATION_INVERTED = booleanPreferencesKey("calibration_inverted")
         val KEY_CALIBRATION_SOURCE = stringPreferencesKey("calibration_source")
         val KEY_CALIBRATION_SAMPLES = intPreferencesKey("calibration_samples")
+        val KEY_QUANTIZATION_STEP_UAH = longPreferencesKey("quantization_step_uah")
+        val KEY_LAST_EVENT_MS = longPreferencesKey("last_processed_event_ms")
+        val KEY_LAST_FOREGROUND_PACKAGE = stringPreferencesKey("last_foreground_package")
     }
 }

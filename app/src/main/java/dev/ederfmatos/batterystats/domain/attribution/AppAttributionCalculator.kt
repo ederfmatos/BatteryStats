@@ -17,6 +17,9 @@ import dev.ederfmatos.batterystats.domain.drain.ScreenRegime
  *     a culpa pelo consumo que existiria mesmo com o celular parado.
  *  3. O tempo da janela não coberto por nenhum intervalo de primeiro plano vai para o bucket de
  *     sistema, não é redistribuído entre os apps.
+ *  4. Janelas [DrainWindow.lowConfidence] são ignoradas por completo. Elas fecharam por tempo com
+ *     um único degrau de quantização, o que significa que o valor pode estar a 100% de distância do
+ *     real — dividir isso entre apps produziria um ranking inventado.
  */
 class AppAttributionCalculator {
 
@@ -32,6 +35,7 @@ class AppAttributionCalculator {
         val baseline = (idleBaselineMilliAmps ?: 0.0).coerceAtLeast(0.0)
 
         for (window in windows) {
+            if (window.lowConfidence) continue
             val windowMah = window.milliAmpHours
             if (windowMah <= 0.0) continue
 

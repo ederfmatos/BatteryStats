@@ -26,6 +26,13 @@ class ScreenStateTracker(private val context: Context) {
     private val screenOn = AtomicBoolean(powerManager?.isInteractive ?: false)
     private var receiver: BroadcastReceiver? = null
 
+    /**
+     * Chamado a cada transição da tela. O serviço usa isto para disparar uma amostra imediata:
+     * ligar e apagar a tela são as duas maiores descontinuidades de consumo que existem, e esperar
+     * o próximo tick de 60 s embaralha os dois regimes na mesma janela.
+     */
+    var onScreenChanged: ((Boolean) -> Unit)? = null
+
     val isScreenOn: Boolean get() = screenOn.get()
 
     fun start() {
@@ -33,8 +40,8 @@ class ScreenStateTracker(private val context: Context) {
         val newReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
-                    Intent.ACTION_SCREEN_ON, Intent.ACTION_USER_PRESENT -> screenOn.set(true)
-                    Intent.ACTION_SCREEN_OFF -> screenOn.set(false)
+                    Intent.ACTION_SCREEN_ON, Intent.ACTION_USER_PRESENT -> notifyChange(true)
+                    Intent.ACTION_SCREEN_OFF -> notifyChange(false)
                 }
             }
         }
@@ -48,9 +55,15 @@ class ScreenStateTracker(private val context: Context) {
         screenOn.set(powerManager?.isInteractive ?: screenOn.get())
     }
 
+    private fun notifyChange(on: Boolean) {
+        val changed = screenOn.getAndSet(on) != on
+        if (changed) onScreenChanged?.invoke(on)
+    }
+
     fun stop() {
         val current = receiver ?: return
         receiver = null
+        onScreenChanged = null
         try {
             context.unregisterReceiver(current)
         } catch (e: IllegalArgumentException) {

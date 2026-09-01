@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
 import dev.ederfmatos.batterystats.domain.model.BatteryStatus
+import dev.ederfmatos.batterystats.domain.model.ForegroundReason
 import dev.ederfmatos.batterystats.domain.model.PlugType
 
 @Entity(
@@ -24,6 +25,8 @@ data class BatterySampleEntity(
     val plugType: String,
     val screenOn: Boolean,
     @ColumnInfo(name = "foregroundPackage") val foregroundPackage: String?,
+    /** Nome de [ForegroundReason], ou null quando há um pacote resolvido. Ver migração 1 → 2. */
+    @ColumnInfo(name = "foregroundReason") val foregroundReason: String? = null,
 )
 
 fun BatterySnapshot.toEntity(): BatterySampleEntity = BatterySampleEntity(
@@ -37,6 +40,7 @@ fun BatterySnapshot.toEntity(): BatterySampleEntity = BatterySampleEntity(
     plugType = plugType.name,
     screenOn = screenOn,
     foregroundPackage = foregroundPackage,
+    foregroundReason = foregroundReason?.name,
 )
 
 fun BatterySampleEntity.toSnapshot(): BatterySnapshot = BatterySnapshot(
@@ -50,4 +54,6 @@ fun BatterySampleEntity.toSnapshot(): BatterySnapshot = BatterySnapshot(
     plugType = runCatching { PlugType.valueOf(plugType) }.getOrDefault(PlugType.UNKNOWN),
     screenOn = screenOn,
     foregroundPackage = foregroundPackage,
+    foregroundReason = foregroundReason
+        ?.let { name -> runCatching { ForegroundReason.valueOf(name) }.getOrNull() },
 )

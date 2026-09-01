@@ -7,54 +7,56 @@ import kotlin.math.abs
 /**
  * Descobre a unidade e o sinal de CURRENT_NOW comparando-o com o dreno derivado do CHARGE_COUNTER.
  *
- * A ideia: o contador de carga não mente sobre magnitude. Se em uma janela de descarga o contador
- * diz 300 mA e CURRENT_NOW diz -300000, o aparelho reporta em microampères com o sinal documentado.
- * Se diz -300, reporta em miliampères. Se diz +300000, reporta em microampères com o sinal
- * invertido.
+ * A ideia: o contador de carga não mente sobre magnitude. Se numa janela de descarga ele diz
+ * 300 mA e CURRENT_NOW diz -300000, o aparelho reporta em microampères com o sinal documentado.
+ * Se diz -300, reporta em miliampères. Se diz +300000, microampères com o sinal invertido.
  *
- * Só funciona em aparelhos onde o contador se move. Onde ele fica travado não há como calibrar
- * automaticamente — o resultado fica em [CurrentCalibration.Source.DEFAULT] e o usuário pode
- * forçar manualmente em Configurações → Diagnóstico.
+ * Usa apenas janelas adaptativas de **alta confiança**: comparar contra uma janela grosseira, que
+ * pode estar a um degrau inteiro de distância do valor real, produziria uma razão sem sentido.
+ *
+ * Onde o contador fica travado não há como calibrar automaticamente — o resultado fica em
+ * [CurrentCalibration.Source.DEFAULT] e o usuário pode forçar em Configurações → Diagnóstico.
  */
 class CurrentCalibrator(
-    private val drainCalculator: DrainCalculator = DrainCalculator(),
-    private val minPairs: Int = DEFAULT_MIN_PAIRS,
+    private val windowBuilder: AdaptiveWindowBuilder = AdaptiveWindowBuilder(),
+    private val minWindows: Int = DEFAULT_MIN_WINDOWS,
 ) {
 
-    fun calibrate(samples: List<BatterySnapshot>): CurrentCalibration? {
+    fun calibrate(
+        samples: List<BatterySnapshot>,
+        gaps: List<MeasurementGap> = emptyList(),
+    ): CurrentCalibration? {
         if (samples.size < 2) return null
         val ordered = samples.sortedBy { it.timestampMs }
 
+        val windows = windowBuilder.analyze(ordered, gaps)
+            .windows
+            .filter { it.source == DrainSource.CHARGE_COUNTER && !it.lowConfidence }
+        if (windows.isEmpty()) return null
+
         val ratios = mutableListOf<Double>()
-        val rawSigns = mutableListOf<Long>()
+        var positiveWindows = 0
 
-        // Roda com a calibração default só para reaproveitar o filtro de janelas válidas; o valor
-        // de CURRENT_NOW usado aqui é sempre o cru, nunca o convertido.
-        val analysis = drainCalculator.analyze(ordered, CurrentCalibration.DEFAULT)
-        val counterWindows = analysis.windows.filter { it.source == DrainSource.CHARGE_COUNTER }
-        if (counterWindows.isEmpty()) return null
-
-        val byStart = ordered.associateBy { it.timestampMs }
-        for (window in counterWindows) {
+        for (window in windows) {
             if (window.milliAmps <= 0.0) continue
-            val start = byStart[window.startMs] ?: continue
-            val end = byStart[window.endMs] ?: continue
-            val raws = listOfNotNull(start.currentNowRaw, end.currentNowRaw).filter { it != 0L }
+            val raws = ordered
+                .filter { it.timestampMs in window.startMs..window.endMs }
+                .mapNotNull { it.currentNowRaw }
+                .filter { it != 0L }
             if (raws.isEmpty()) continue
 
-            val rawAvg = raws.map { it.toDouble() }.average()
-            ratios += abs(rawAvg) / window.milliAmps
-            rawSigns += if (rawAvg >= 0) 1L else -1L
+            val rawMedian = raws.map { it.toDouble() }.medianOrNull() ?: continue
+            ratios += abs(rawMedian) / window.milliAmps
+            if (rawMedian >= 0) positiveWindows++
         }
 
-        if (ratios.size < minPairs) return null
+        if (ratios.size < minWindows) return null
 
-        val medianRatio = ratios.median()
+        val medianRatio = ratios.medianOrNull() ?: return null
         val divisor = if (medianRatio >= MICRO_AMP_THRESHOLD) 1000 else 1
 
         // Durante descarga o sinal documentado é negativo. Maioria positiva ⇒ aparelho invertido.
-        val positives = rawSigns.count { it > 0 }
-        val inverted = positives * 2 > rawSigns.size
+        val inverted = positiveWindows * 2 > ratios.size
 
         return CurrentCalibration(
             divisor = divisor,
@@ -65,7 +67,7 @@ class CurrentCalibrator(
     }
 
     companion object {
-        const val DEFAULT_MIN_PAIRS = 5
+        const val DEFAULT_MIN_WINDOWS = 3
 
         /**
          * A razão |CURRENT_NOW| / mA fica perto de 1000 em microampères e perto de 1 em

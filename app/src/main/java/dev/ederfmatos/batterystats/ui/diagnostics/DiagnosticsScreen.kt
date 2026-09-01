@@ -25,6 +25,8 @@ import dev.ederfmatos.batterystats.data.usage.UsageAccess
 import dev.ederfmatos.batterystats.domain.model.CurrentCalibration
 import dev.ederfmatos.batterystats.ui.MainUiState
 import dev.ederfmatos.batterystats.ui.common.PermissionCard
+import dev.ederfmatos.batterystats.ui.common.groupedDigits
+import dev.ederfmatos.batterystats.ui.common.label
 
 @Composable
 fun DiagnosticsScreen(
@@ -60,6 +62,29 @@ fun DiagnosticsScreen(
                     stringResource(R.string.diagnostics_gaps),
                     (state.periodStats?.analysis?.gaps?.size ?: 0).toString(),
                 )
+                val coverage = state.periodStats?.coverage
+                if (coverage != null) {
+                    InfoRow(
+                        stringResource(R.string.coverage_label),
+                        stringResource(
+                            R.string.coverage_value,
+                            coverage.percent.toInt(),
+                            stringResource(R.string.coverage_period_24h),
+                        ),
+                    )
+                }
+                QuantizationRow(state)
+                val stats = state.periodStats?.stats
+                if (stats != null) {
+                    InfoRow(
+                        stringResource(R.string.diagnostics_windows),
+                        stringResource(
+                            R.string.windows_confidence,
+                            stats.windowCount,
+                            stats.highConfidenceWindowCount,
+                        ),
+                    )
+                }
             }
         }
 
@@ -100,6 +125,30 @@ fun DiagnosticsScreen(
             )
         }
     }
+}
+
+/**
+ * O degrau de quantização é o número mais importante desta tela: ele define o piso de incerteza de
+ * toda medição, e é ele que explica por que janelas curtas devolvem múltiplos de um mesmo valor.
+ */
+@Composable
+private fun QuantizationRow(state: MainUiState) {
+    val stepUah = state.settings.quantizationStepUah
+    val intervalMs = state.settings.samplingInterval.millis
+    InfoRow(
+        stringResource(R.string.quantization_label),
+        if (stepUah <= 0L) {
+            stringResource(R.string.quantization_none)
+        } else {
+            val intervalHours = intervalMs / 3_600_000.0
+            stringResource(
+                R.string.quantization_value,
+                stepUah.groupedDigits(),
+                (stepUah / 1000.0) / intervalHours,
+                state.settings.samplingInterval.label(),
+            )
+        },
+    )
 }
 
 @Composable

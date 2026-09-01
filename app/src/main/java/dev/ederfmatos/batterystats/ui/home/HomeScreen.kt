@@ -28,6 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ederfmatos.batterystats.R
+import dev.ederfmatos.batterystats.domain.drain.Coverage
+import dev.ederfmatos.batterystats.domain.drain.RegimeStats
 import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
 import dev.ederfmatos.batterystats.ui.MainUiState
 import dev.ederfmatos.batterystats.ui.common.PermissionCard
@@ -239,22 +241,9 @@ private fun DrainCard(state: MainUiState) {
                 text = stringResource(R.string.drain_title),
                 style = MaterialTheme.typography.titleMedium,
             )
-            ReadingRow(
-                label = stringResource(R.string.drain_screen_on),
-                value = stringResource(
-                    R.string.drain_ma_and_pct,
-                    period.stats.screenOn.averageMilliAmps,
-                    period.stats.screenOn.percentPerHour,
-                ),
-            )
-            ReadingRow(
-                label = stringResource(R.string.drain_screen_off),
-                value = stringResource(
-                    R.string.drain_ma_and_pct,
-                    period.stats.screenOff.averageMilliAmps,
-                    period.stats.screenOff.percentPerHour,
-                ),
-            )
+            RegimeRow(stringResource(R.string.drain_screen_on), period.stats.screenOn)
+            RegimeRow(stringResource(R.string.drain_screen_off), period.stats.screenOff)
+            CoverageRow(period.coverage)
             val hours = period.projection.hoursRemaining
             Text(
                 text = if (hours != null && hours.isFinite()) {
@@ -287,6 +276,52 @@ private fun DrainCard(state: MainUiState) {
                 }
             }
         }
+    }
+}
+
+/**
+ * Uma linha de regime de tela. Quando nenhuma janela do regime fechou por acúmulo de degraus, o
+ * valor sai como faixa: com o contador quantizado, um número exato ali seria falso.
+ */
+@Composable
+private fun RegimeRow(label: String, regime: RegimeStats) {
+    ReadingRow(
+        label = label,
+        value = if (regime.isCoarse) {
+            stringResource(
+                R.string.drain_range,
+                regime.rangeLowMilliAmps,
+                regime.rangeHighMilliAmps,
+            )
+        } else {
+            stringResource(R.string.drain_ma_and_pct, regime.averageMilliAmps, regime.percentPerHour)
+        },
+    )
+    if (regime.isCoarse && regime.windowCount > 0) {
+        Text(
+            text = stringResource(R.string.drain_low_confidence),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun CoverageRow(coverage: Coverage) {
+    ReadingRow(
+        label = stringResource(R.string.coverage_label),
+        value = stringResource(
+            R.string.coverage_value,
+            coverage.percent.toInt(),
+            stringResource(R.string.coverage_period_24h),
+        ),
+    )
+    if (coverage.isPoor) {
+        Text(
+            text = stringResource(R.string.coverage_poor),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+        )
     }
 }
 

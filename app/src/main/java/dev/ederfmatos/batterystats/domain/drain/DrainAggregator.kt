@@ -24,6 +24,8 @@ class DrainAggregator(
             idleBaselineMilliAmps = idleBaseline(windows),
             hourly = hourly(windows),
             windowCount = windows.size,
+            highConfidenceWindowCount = windows.count { !it.lowConfidence },
+            quantizationStepUah = windows.firstOrNull()?.quantizationStepUah ?: 0L,
         )
     }
 
@@ -37,7 +39,15 @@ class DrainAggregator(
             percentPerHour = if (hours > 0) levelDrop / hours else 0.0,
             durationMs = durationMs,
             windowCount = windows.size,
+            highConfidenceWindowCount = windows.count { !it.lowConfidence },
+            uncertaintyMilliAmps = weightedUncertainty(windows),
         )
+    }
+
+    private fun weightedUncertainty(windows: List<DrainWindow>): Double {
+        val totalMs = windows.sumOf { it.durationMs }
+        if (totalMs <= 0L) return 0.0
+        return windows.sumOf { it.uncertaintyMilliAmps * it.durationMs } / totalMs
     }
 
     private fun weightedAverageMilliAmps(windows: List<DrainWindow>): Double {
@@ -47,13 +57,21 @@ class DrainAggregator(
     }
 
     /**
-     * O piso de consumo em repouso. Usa o percentil 10 das janelas de tela desligada em vez do
-     * mínimo absoluto: o mínimo é uma amostra só e pega qualquer artefato de arredondamento do
-     * contador, enquanto o percentil baixo representa um patamar que o aparelho realmente sustenta.
+     * O piso de consumo em repouso: percentil 10 do dreno com a tela desligada, considerando só
+     * janelas de pelo menos [MIN_BASELINE_WINDOW_MS].
+     *
+     * O corte de duração não é detalhe. Com o contador quantizado, janelas curtas em repouso só
+     * produzem múltiplos do degrau (0, 244, 488 mA…); foi a partir de ~300 s que os valores
+     * medidos convergiram para os 40–100 mA que o aparelho realmente consome parado. Usar o
+     * percentil 10, e não o mínimo, evita que um único zero de arredondamento vire a linha de base.
      */
     private fun idleBaseline(windows: List<DrainWindow>): Double? {
         val offValues = windows
-            .filter { it.screen == ScreenRegime.OFF && it.milliAmps > 0.0 }
+            .filter {
+                it.screen == ScreenRegime.OFF &&
+                    it.milliAmps > 0.0 &&
+                    it.durationMs >= MIN_BASELINE_WINDOW_MS
+            }
             .map { it.milliAmps }
             .sorted()
         if (offValues.size < MIN_WINDOWS_FOR_BASELINE) return null
@@ -82,5 +100,8 @@ class DrainAggregator(
     companion object {
         const val MIN_WINDOWS_FOR_BASELINE = 5
         const val BASELINE_PERCENTILE = 0.10
+
+        /** Abaixo de 300 s a quantização do contador domina o valor medido. */
+        const val MIN_BASELINE_WINDOW_MS = 300_000L
     }
 }

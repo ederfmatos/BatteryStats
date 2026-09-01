@@ -6,7 +6,17 @@ data class RegimeStats(
     val percentPerHour: Double,
     val durationMs: Long,
     val windowCount: Int,
+    val highConfidenceWindowCount: Int = 0,
+    /** Incerteza média imposta pela quantização do contador, ponderada pela duração. */
+    val uncertaintyMilliAmps: Double = 0.0,
 ) {
+    /** Sem nenhuma janela de alta confiança, o número só é honesto apresentado como faixa. */
+    val isCoarse: Boolean get() = windowCount > 0 && highConfidenceWindowCount == 0
+
+    val rangeLowMilliAmps: Double
+        get() = (averageMilliAmps - uncertaintyMilliAmps).coerceAtLeast(0.0)
+    val rangeHighMilliAmps: Double get() = averageMilliAmps + uncertaintyMilliAmps
+
     companion object {
         val EMPTY = RegimeStats(0.0, 0.0, 0L, 0)
     }
@@ -35,6 +45,8 @@ data class DrainStats(
     val idleBaselineMilliAmps: Double?,
     val hourly: List<HourlyDrain>,
     val windowCount: Int,
+    val highConfidenceWindowCount: Int = 0,
+    val quantizationStepUah: Long = 0L,
 ) {
     companion object {
         val EMPTY = DrainStats(

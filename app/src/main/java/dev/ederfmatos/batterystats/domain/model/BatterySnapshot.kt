@@ -25,6 +25,8 @@ data class BatterySnapshot(
     val plugType: PlugType,
     val screenOn: Boolean,
     val foregroundPackage: String? = null,
+    /** Por que [foregroundPackage] é null. Null aqui significa que há um pacote resolvido. */
+    val foregroundReason: ForegroundReason? = null,
 ) {
     val temperatureCelsius: Double? get() = temperatureDeciC?.let { it / 10.0 }
     val voltageVolts: Double? get() = voltageMv?.let { it / 1000.0 }

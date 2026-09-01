@@ -1,0 +1,179 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "ca4176c22fd1799725c322811e5e8252",
+    "entities": [
+      {
+        "tableName": "battery_sample",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestampMs` INTEGER NOT NULL, `levelPct` INTEGER NOT NULL, `chargeCounterUah` INTEGER, `currentNowRaw` INTEGER, `temperatureDeciC` INTEGER, `voltageMv` INTEGER, `status` TEXT NOT NULL, `plugType` TEXT NOT NULL, `screenOn` INTEGER NOT NULL, `foregroundPackage` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestampMs",
+            "columnName": "timestampMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "levelPct",
+            "columnName": "levelPct",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargeCounterUah",
+            "columnName": "chargeCounterUah",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "currentNowRaw",
+            "columnName": "currentNowRaw",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "temperatureDeciC",
+            "columnName": "temperatureDeciC",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "voltageMv",
+            "columnName": "voltageMv",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plugType",
+            "columnName": "plugType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOn",
+            "columnName": "screenOn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foregroundPackage",
+            "columnName": "foregroundPackage",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_battery_sample_timestampMs",
+            "unique": false,
+            "columnNames": [
+              "timestampMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_sample_timestampMs` ON `${TABLE_NAME}` (`timestampMs`)"
+          }
+        ]
+      },
+      {
+        "tableName": "daily_aggregate",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`dayEpochDay` INTEGER NOT NULL, `screenOnMilliAmps` REAL NOT NULL, `screenOffMilliAmps` REAL NOT NULL, `screenOnMs` INTEGER NOT NULL, `screenOffMs` INTEGER NOT NULL, `screenOnPercentPerHour` REAL NOT NULL, `screenOffPercentPerHour` REAL NOT NULL, `totalMilliAmpHours` REAL NOT NULL, `idleBaselineMilliAmps` REAL, `maxChargeCounterUah` INTEGER, `sampleCount` INTEGER NOT NULL, `computedAtMs` INTEGER NOT NULL, PRIMARY KEY(`dayEpochDay`))",
+        "fields": [
+          {
+            "fieldPath": "dayEpochDay",
+            "columnName": "dayEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOnMilliAmps",
+            "columnName": "screenOnMilliAmps",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOffMilliAmps",
+            "columnName": "screenOffMilliAmps",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOnMs",
+            "columnName": "screenOnMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOffMs",
+            "columnName": "screenOffMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOnPercentPerHour",
+            "columnName": "screenOnPercentPerHour",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOffPercentPerHour",
+            "columnName": "screenOffPercentPerHour",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalMilliAmpHours",
+            "columnName": "totalMilliAmpHours",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idleBaselineMilliAmps",
+            "columnName": "idleBaselineMilliAmps",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "maxChargeCounterUah",
+            "columnName": "maxChargeCounterUah",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sampleCount",
+            "columnName": "sampleCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "computedAtMs",
+            "columnName": "computedAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "dayEpochDay"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ca4176c22fd1799725c322811e5e8252')"
+    ]
+  }
+}
