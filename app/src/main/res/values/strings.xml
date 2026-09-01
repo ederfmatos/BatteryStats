@@ -301,4 +301,24 @@
     <string name="confidence_windows_explanation">Janelas que fecharam por tempo com um único degrau do contador. Entram nas médias, mas nunca no ranking por app.</string>
     <string name="confidence_step_explanation">O menor passo em que este aparelho move o contador de carga. Ele define o piso de incerteza de toda medição: quanto mais curta a janela, maior o erro.</string>
     <string name="confidence_estimate_explanation">O consumo por app é estimado por correlação — dreno medido da janela dividido entre os apps que estavam em primeiro plano nela. Não é medição de consumo por app; a plataforma não expõe isso para um app instalado por sideload.</string>
+
+    <!-- Modo avançado (BATTERY_STATS via adb) -->
+    <string name="advanced_title">Modo avançado</string>
+    <string name="advanced_granted">Ativo. O consumo por app usa contadores medidos pelo sistema: wakelocks, GPS, jobs e tempo em cada estado de processo.</string>
+    <string name="advanced_not_granted">Inativo. O consumo por app é estimado por correlação.</string>
+    <string name="advanced_rationale">A permissão BATTERY_STATS é concedível por linha de comando. Ligue o celular no computador com a depuração USB ativa e rode:</string>
+    <string name="advanced_copy_command">Copiar comando</string>
+    <string name="advanced_command_copied">Comando copiado.</string>
+    <string name="advanced_persistence">Uma vez só: o grant sobrevive a reiniciar o aparelho e às atualizações automáticas do app. Some apenas se você desinstalar — o que já apagaria o banco de amostras.</string>
+    <string name="advanced_still_not_mah">Nem isso dá mAh medido por app: esse número não existe em nível nenhum, nem com root. O sistema mede tempo e multiplica por constantes que o fabricante declara. Por isso a tela mostra os tempos, não um mAh inventado.</string>
+
+    <!-- Fatos medidos por app -->
+    <string name="measured_wakelock">%1$s de wakelock parcial</string>
+    <string name="measured_wakelock_top">maior: %1$s (%2$s)</string>
+    <string name="measured_gps">%1$s de GPS</string>
+    <string name="measured_jobs">%1$d jobs</string>
+    <string name="measured_visible">%1$s visível</string>
+    <string name="measured_invisible">%1$s ativo sem estar visível</string>
+    <string name="measured_title">Medido pelo sistema</string>
+    <string name="measured_counters_reset">Os contadores do sistema foram reiniciados neste intervalo; os números abaixo valem do reinício para cá.</string>
 </resources>

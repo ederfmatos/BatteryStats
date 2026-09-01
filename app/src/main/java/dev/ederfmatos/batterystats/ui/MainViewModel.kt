@@ -42,6 +42,8 @@ data class MainUiState(
     val health: BatteryHealthEstimate? = null,
     val serviceKillCount: Int = 0,
     val canScheduleExactAlarms: Boolean = true,
+    val hasBatteryStatsPermission: Boolean = false,
+    val batteryStatsGrantCommand: String = "",
     val loading: Boolean = true,
 ) {
     val currentMilliAmps: Double?
@@ -117,6 +119,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 health = health,
                 serviceKillCount = serviceKills,
                 canScheduleExactAlarms = container.samplingWatchdog.canScheduleExact(),
+                hasBatteryStatsPermission = container.healthStatsReader.hasBatteryStatsPermission(),
+                batteryStatsGrantCommand = container.healthStatsReader.grantCommand(),
                 hasUsageAccess = container.foregroundAppResolver.hasAccess(),
                 ignoringBatteryOptimizations = isIgnoringBatteryOptimizations(),
                 loading = false,

@@ -418,3 +418,51 @@ escrever de memória — versão ou constante inventada é o erro mais comum aqu
   gap no meio da janela e `chargeCounter` travado.
 - Sem `!!` fora de teste.
 - Strings em `strings.xml`, em português.
+
+
+---
+
+# Adendo — correção factual da premissa sobre BATTERY_STATS
+
+*(escrito em 2026-09-01, depois de pesquisa em fonte primária)*
+
+As fases 1 a 9 partiram de que `BATTERY_STATS` é `signature|privileged` e portanto inalcançável.
+**Isso está errado.** O `protectionLevel` real no AOSP é:
+
+```xml
+<permission android:name="android.permission.BATTERY_STATS"
+    android:protectionLevel="signature|privileged|development" />
+```
+
+Verificado em `core/res/AndroidManifest.xml` de `refs/heads/main`. O flag `development` significa
+concedível por `adb shell pm grant`, e `PermissionManagerServiceImpl.grantRuntimePermission`
+aceita explicitamente permissões `development`.
+
+Consequências:
+
+- **O que continua verdadeiro:** mAh medido por app **não existe em nenhum nível de privilégio**,
+  nem com root. O framework mede tempo e multiplica por constantes que o fabricante declara em
+  `power_profile.xml` ([source.android.com/docs/core/power](https://source.android.com/docs/core/power)).
+  A regra "estimativa nunca é apresentada como medição" continua valendo integralmente.
+- **O que muda:** com o grant, `SystemHealthManager.takeUidSnapshot(uid)` — **SDK público desde a
+  API 24**, sem reflection e sem API oculta — entrega, por app: wakelocks parciais com tag,
+  contagem e duração; tempo de GPS, câmera, áudio, vídeo, scans; jobs e syncs; tempo em cada
+  estado de processo (top, foreground, foreground service, background, cached); CPU e bytes de
+  rede. Tudo contador medido.
+- **A regra revogada:** "não declarar `BATTERY_STATS` no manifest". Ela precisa ser declarada,
+  senão o `pm grant` falha — o PackageManager recusa conceder permissão que o app não pediu.
+  Declarar não concede nada numa instalação normal.
+- **O grant persiste** através de reinício e das auto-atualizações da Fase 8. Some só ao
+  desinstalar.
+
+**O que continua fora de alcance sem root:** kernel wakelocks, `/sys/class/power_supply/battery/*`
+e `/proc/stat` (bloqueados por SELinux para `untrusted_app`), e desligar o gerenciamento agressivo
+da Samsung.
+
+**Decisão de desenho:** o modo avançado mostra os **temporizadores medidos**, não os campos
+`MEASUREMENT_*_POWER_MAMS` do `HealthStats`. Aqueles vêm prontos e são tentadores, mas são o mesmo
+modelo de sempre com mais decimais. "Wakelock parcial: 47 min" é verificável; "180 mAh" não é.
+
+**Não adotado de propósito:** `adb shell settings put global hidden_api_policy 1`, que GSam e
+BetterBatteryStats instruem. Desliga a proteção de API oculta do aparelho inteiro, para todos os
+apps, em troca de `BatteryUsageStats` — cujos números continuam modelados.

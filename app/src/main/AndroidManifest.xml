@@ -8,9 +8,26 @@
       github.com. Nenhum dado de bateria sai do aparelho, e não há analytics, crash reporting
       nem telemetria de espécie alguma. Ver network_security_config.xml e o README.
 
-      BATTERY_STATS continua fora daqui: é signature|privileged e um APK sideloadado nunca
-      receberia. O consumo por app deste app é estimado por correlação, não medido.
+      BATTERY_STATS é declarada aqui, mas isso NÃO a concede: numa instalação normal ela
+      permanece signature|privileged e o sistema a nega. Declarar é só o pré-requisito para que
+      `adb shell pm grant` possa concedê-la — o PackageManager recusa conceder uma permissão que
+      o app não pediu.
+
+      O protectionLevel real dela no AOSP é `signature|privileged|development`, e `development`
+      significa concedível por shell. As fases anteriores partiam de que era apenas
+      `signature|privileged`, o que estava factualmente errado.
+
+      Concedida, ela destrava SystemHealthManager.takeUidSnapshot — SDK público, sem reflection —
+      e o consumo por app deixa de ser correlação e passa a ser contador medido de wakelock, GPS,
+      jobs e estado de processo. Sem ela o app funciona igual a antes.
+
+      Isto continua não dando mAh medido por app: esse número não existe em nenhum nível de
+      privilégio, nem com root. O framework mede tempo e multiplica por constantes declaradas
+      pelo fabricante em power_profile.xml.
     -->
+    <uses-permission
+        android:name="android.permission.BATTERY_STATS"
+        tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 

@@ -93,6 +93,11 @@ fun DiagnosticsScreen(
             }
         }
 
+        AdvancedModeCard(
+            granted = state.hasBatteryStatsPermission,
+            command = state.batteryStatsGrantCommand,
+        )
+
         CalibrationCard(state, onForceCalibration, onRecalibrate)
 
         Card(Modifier.fillMaxWidth()) {

@@ -10,6 +10,7 @@ import dev.ederfmatos.batterystats.data.battery.DeviceStateReader
 import dev.ederfmatos.batterystats.data.sampling.InteractiveTimeCounter
 import dev.ederfmatos.batterystats.data.sampling.SamplingWatchdog
 import dev.ederfmatos.batterystats.data.db.BatteryDatabase
+import dev.ederfmatos.batterystats.data.health.HealthStatsReader
 import dev.ederfmatos.batterystats.data.prefs.SettingsRepository
 import dev.ederfmatos.batterystats.data.receiver.ScreenStateTracker
 import dev.ederfmatos.batterystats.data.usage.AppLabelResolver
@@ -56,6 +57,8 @@ class AppContainer(context: Context) {
     val foregroundAppResolver: ForegroundAppResolver by lazy { ForegroundAppResolver(appContext) }
 
     val appLabelResolver: AppLabelResolver by lazy { AppLabelResolver(appContext) }
+
+    val healthStatsReader: HealthStatsReader by lazy { HealthStatsReader(appContext) }
 
     val updateChecker: UpdateChecker by lazy { UpdateChecker(appContext) }
 

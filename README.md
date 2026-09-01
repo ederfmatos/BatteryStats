@@ -19,10 +19,11 @@ aproximado** de quais apps mais gastam. Instalação por sideload — não vai p
 
 ## O que o app NÃO mede
 
-- **Consumo real por app.** A permissão `BATTERY_STATS`, que dá o mAh por UID, é
-  `signature|privileged`: só apps assinados com a chave da plataforma ou instalados em
-  `/system/priv-app` conseguem. Um APK sideloadado nunca vai receber, e ler `dumpsys` via
-  `Runtime.exec` falha sem root. O app não tenta nenhum dos dois.
+- **mAh real por app.** Isso **não existe em nenhum nível de privilégio, nem com root.** O
+  framework não mede corrente por app: ele mede tempo de uso de cada subsistema e multiplica por
+  constantes que o fabricante declara em `power_profile.xml`
+  ([fonte](https://source.android.com/docs/core/power)). Todo app que mostra "mAh por app" está
+  mostrando esse modelo.
 - O ranking da tela **Vilões** é **estimativa por correlação**: mede-se o dreno real de cada janela
   de tempo e divide-se entre os apps que estavam em primeiro plano naquela janela, proporcionalmente
   ao tempo de cada um. Isso é uma inferência, não uma medição por app. A tela diz isso no rodapé.
@@ -32,6 +33,41 @@ aproximado** de quais apps mais gastam. Instalação por sideload — não vai p
 - **Capacidade absoluta ou saúde de fábrica da bateria.** A capacidade de projeto não é exposta por
   API pública. A tela de saúde mostra uma comparação **relativa**: a carga cheia observada agora
   contra a maior que o app já registrou.
+
+## Modo avançado — um comando `adb`, uma vez
+
+Por padrão o ranking é estimativa por correlação. Com **uma** permissão concedida por linha de
+comando, ele passa a mostrar contadores **medidos** pelo próprio serviço de bateria do sistema.
+
+```
+adb shell pm grant dev.ederfmatos.batterystats android.permission.BATTERY_STATS
+```
+
+O comando exato, com botão de copiar e indicador ao vivo de concessão, está em **Ajustes →
+Diagnóstico → Modo avançado**.
+
+**Por que isso funciona.** O `protectionLevel` de `BATTERY_STATS` no AOSP é
+`signature|privileged|development` — e `development` quer dizer concedível por shell. O app declara
+a permissão no manifest (declarar não concede nada; é só o pré-requisito para o `pm grant`
+funcionar).
+
+**O que passa a ser fato medido**, via `SystemHealthManager.takeUidSnapshot` — SDK público desde a
+API 24, sem reflection e sem API oculta:
+
+- wakelocks parciais por app, com tag, contagem e duração — responde *quem* acorda o aparelho;
+- tempo de GPS, câmera, áudio, vídeo, scans de Wi-Fi e Bluetooth;
+- jobs e syncs executados;
+- tempo em cada estado de processo (visível, foreground service, background, cached);
+- CPU e bytes de rede por app.
+
+**O que continua não existindo:** mAh por app. O app mostra os tempos justamente por isso.
+
+O grant sobrevive a reiniciar o aparelho e às atualizações automáticas. Some só se você
+desinstalar. Sem ele, o app funciona exatamente como antes.
+
+> **Não** é preciso mexer em `hidden_api_policy`. Outros apps da categoria instruem isso; seria
+> desligar a proteção de API oculta do aparelho inteiro para ganhar números que continuam
+> modelados.
 
 ## Precisão de `CURRENT_NOW`
 
