@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O app contata exatamente três coisas, todas em HTTPS e todas no GitHub:
+    - github.com                      redireciona releases/latest/download/...
+    - objects.githubusercontent.com   onde o APK e os JSON são de fato servidos
+    - api.github.com                  não usado hoje; deixado fora de propósito
+
+  Nada mais. Sem telemetria, sem analytics, sem envio de dado de bateria para lugar nenhum.
+  Cleartext bloqueado globalmente: se algum dia um redirect tentar cair em http://, a conexão
+  falha em vez de baixar um APK por canal não autenticado.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

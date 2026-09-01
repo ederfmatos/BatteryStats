@@ -1,8 +1,35 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
+
+/**
+ * versionCode vem do número da run do GitHub Actions, que é monotônico — o app só instala uma
+ * atualização com versionCode maior que o instalado, então esse número não pode retroceder nunca.
+ * Fora do CI vale 1, suficiente para build local.
+ */
+val ciVersionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toIntOrNull() ?: 1
+
+/** Tag mais recente, ou short SHA. O CI exporta; localmente cai em "dev". */
+val ciVersionName: String = System.getenv("BUILD_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "dev"
+
+/**
+ * O keystore de release vive fora do repositório. No CI ele é reconstituído a partir do secret
+ * KEYSTORE_BASE64; localmente, de um keystore.properties que o .gitignore barra.
+ */
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+fun keystoreValue(envName: String, propertyName: String): String? =
+    System.getenv(envName)?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
 
 android {
     namespace = "dev.ederfmatos.batterystats"
@@ -12,13 +39,29 @@ android {
         applicationId = "dev.ederfmatos.batterystats"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = ciVersionCode
+        versionName = ciVersionName
+    }
+
+    signingConfigs {
+        create("release") {
+            val storePath = keystoreValue("KEYSTORE_FILE", "storeFile")
+            if (storePath != null && file(storePath).exists()) {
+                storeFile = file(storePath)
+                storePassword = keystoreValue("KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = keystoreValue("KEY_ALIAS", "keyAlias")
+                keyPassword = keystoreValue("KEY_PASSWORD", "keyPassword")
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Sem keystore configurado a assinatura fica nula e o build de release falha na hora
+            // de empacotar — melhor do que publicar um APK assinado com chave de debug, que nunca
+            // conseguiria substituir o app instalado.
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -67,4 +110,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // O org.json do Android é um stub no classpath de teste do AGP e estoura em qualquer chamada.
+    // Esta é a implementação real, só para os testes; em produção vale a do sistema.
+    testImplementation(libs.org.json)
 }

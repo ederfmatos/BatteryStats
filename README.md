@@ -60,27 +60,69 @@ casos vale conferir o valor bruto na tela inicial e forçar a calibração à m�
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Pedir a isenção que evita o app ser morto enquanto mede. O app só abre esse diálogo depois de explicar o porquê. |
 | `PACKAGE_USAGE_STATS` | Reconstruir a timeline de app em primeiro plano, que é o que permite montar o ranking. Concedida numa tela de Configurações do sistema, não em runtime. **O app funciona sem ela**, em modo degradado: continua medindo a bateria, só joga tudo no bucket de sistema. |
 
-**Não há permissão `INTERNET`.** Tudo é local: sem analytics, sem crash reporting, sem telemetria.
-Como a permissão não está declarada, nem uma dependência transitiva consegue abrir socket.
+### Rede
+
+A partir da auto-atualização o app declara `INTERNET`, com escopo estrito. Os **únicos** hosts que
+ele contata:
+
+| Host | Para quê |
+|---|---|
+| `github.com` | resolve `releases/latest/download/...` (redireciona) |
+| `objects.githubusercontent.com` | onde o GitHub de fato serve o APK e os JSON |
+
+São três GETs na vida do app: `latest.json`, `config.json` e o próprio APK. **Nenhum dado de
+bateria sai do aparelho.** Não há analytics, crash reporting nem telemetria de espécie alguma, e
+não há nenhum endpoint de escrita. `network_security_config.xml` bloqueia cleartext globalmente:
+um redirect para `http://` falha em vez de baixar um APK por canal não autenticado.
 
 Também **não há** `BATTERY_STATS` no manifest — ver "o que o app não mede".
 
-## Instalar o APK pelo próprio celular
+## ⚠️ O keystore de release
 
-O CI compila e publica o APK a cada push.
+O APK de release é assinado com um keystore fixo. O Android só instala uma atualização por cima do
+app existente se ela vier assinada com **o mesmo certificado**.
 
-1. Abra `https://github.com/ederfmatos/BatteryStats/actions` no navegador **do celular**.
-2. Toque na execução mais recente com o check verde.
-3. Role até **Artifacts** e baixe `batterystats-<sha>`. O GitHub entrega um `.zip`.
-4. Descompacte (o gerenciador de arquivos do Android faz isso) e abra o `app-debug.apk`.
-5. O Android vai pedir para permitir a instalação de fontes desconhecidas para o app que está
-   abrindo o arquivo. Autorize e instale.
+> **Perder esse keystore significa nunca mais conseguir atualizar o app instalado.** A única saída
+> seria desinstalar — o que **apaga o banco de amostras**. Faça backup offline.
 
-O APK é assinado com a **debug key** gerada automaticamente pelo AGP. É o suficiente para sideload —
-não há keystore de release neste repositório.
+O keystore vive em `~/BatteryStats-keystore/` (fora do repositório, e o `.gitignore` barra `*.jks`).
+As credenciais estão em `~/BatteryStats-keystore/credenciais.txt`. No CI ele é reconstituído a
+partir dos GitHub Secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` e `KEY_PASSWORD`, e
+apagado do runner ao fim do job.
 
-> Os artifacts do GitHub Actions expiram em 30 dias. Passado esse prazo, rode o workflow de novo em
-> Actions → build → *Run workflow*.
+Para assinar localmente, copie `keystore.properties.example` para `keystore.properties` (barrado
+pelo git) e preencha.
+
+## Auto-atualização
+
+O CI compila e publica uma Release a cada push em `main`. O app checa `latest.json`, compara o
+`versionCode` com o instalado, baixa o APK e se instala.
+
+**Antes de instalar, quatro verificações obrigatórias**, nesta ordem, falhando fechado:
+
+1. SHA-256 do arquivo baixado igual ao publicado;
+2. certificado de assinatura idêntico ao do app instalado;
+3. mesmo `packageName` e `versionCode` maior;
+4. `minSdk` do APK compatível com o aparelho.
+
+Sem as quatro, isto seria um canal de execução remota de código no aparelho. Nenhuma está atrás de
+flag.
+
+## Instalar pelo próprio celular
+
+**Só a primeira instalação é manual.** Depois disso o app se atualiza sozinho.
+
+Abra este link no navegador **do celular** e toque em baixar:
+
+```
+https://github.com/ederfmatos/BatteryStats/releases/latest/download/app-release.apk
+```
+
+O Android vai pedir para permitir a instalação de fontes desconhecidas para o navegador. Autorize e
+instale.
+
+> A URL acima é estável: aponta sempre para a Release mais recente. É por isso que o asset da
+> Release tem nome fixo (`app-release.apk`), enquanto o artifact do workflow leva o short SHA.
 
 ## Primeiro uso
 

@@ -1,0 +1,9 @@
+{
+  "configVersion": 1,
+  "minStepsToClose": 4,
+  "maxWindowMs": 300000,
+  "idleBaselineMaxMA": 120,
+  "highIdleWarnMA": 150,
+  "samplingIntervalMs": 60000,
+  "deviceOverrides": {}
+}
