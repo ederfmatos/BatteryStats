@@ -1,0 +1,303 @@
+package dev.ederfmatos.batterystats.ui.home
+
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import dev.ederfmatos.batterystats.R
+import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
+import dev.ederfmatos.batterystats.ui.MainUiState
+import dev.ederfmatos.batterystats.ui.common.PermissionCard
+import dev.ederfmatos.batterystats.ui.common.formatHours
+import dev.ederfmatos.batterystats.ui.common.groupedDigits
+import dev.ederfmatos.batterystats.ui.common.label
+
+@Composable
+fun HomeScreen(
+    state: MainUiState,
+    onStartSampling: () -> Unit,
+    onStopSampling: () -> Unit,
+    onPermissionsChanged: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        onPermissionsChanged()
+        if (granted) onStartSampling()
+    }
+    val batteryOptimizationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { onPermissionsChanged() }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        val snapshot = state.snapshot
+        if (snapshot == null) {
+            UnavailableCard()
+        } else {
+            LevelCard(snapshot)
+            ReadingsCard(snapshot, state.currentMilliAmps)
+        }
+
+        SamplingCard(state, onStartSampling, onStopSampling) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                notificationLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                onStartSampling()
+            }
+        }
+
+        DrainCard(state)
+
+        if (!state.ignoringBatteryOptimizations) {
+            PermissionCard(
+                title = stringResource(R.string.permission_battery_title),
+                rationale = stringResource(R.string.permission_battery_rationale),
+                actionLabel = stringResource(R.string.permission_battery_action),
+                onAction = {
+                    val intent = Intent(
+                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                        Uri.parse("package:${context.packageName}"),
+                    )
+                    batteryOptimizationLauncher.launch(intent)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun UnavailableCard() {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.home_reading_unavailable),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = stringResource(R.string.home_reading_unavailable_detail),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LevelCard(snapshot: BatterySnapshot) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = stringResource(R.string.unit_percent, snapshot.levelPct),
+                style = MaterialTheme.typography.displayMedium,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+            LinearProgressIndicator(
+                progress = { snapshot.levelPct.coerceIn(0, 100) / 100f },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = "${snapshot.status.label()} · ${snapshot.plugType.label()}",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReadingsCard(snapshot: BatterySnapshot, currentMilliAmps: Double?) {
+    val unavailable = stringResource(R.string.value_unavailable)
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            ReadingRow(
+                label = stringResource(R.string.home_temperature),
+                value = snapshot.temperatureCelsius
+                    ?.let { stringResource(R.string.unit_celsius, it) } ?: unavailable,
+            )
+            ReadingRow(
+                label = stringResource(R.string.home_voltage),
+                value = snapshot.voltageVolts
+                    ?.let { stringResource(R.string.unit_volts, it) } ?: unavailable,
+            )
+            ReadingRow(
+                label = stringResource(R.string.home_current),
+                value = currentMilliAmps
+                    ?.let { stringResource(R.string.unit_milliamps, it) } ?: unavailable,
+            )
+            ReadingRow(
+                label = stringResource(R.string.home_charge_counter),
+                value = snapshot.chargeCounterUah
+                    ?.let { stringResource(R.string.unit_microamp_hours, it.groupedDigits()) }
+                    ?: unavailable,
+            )
+            ReadingRow(
+                label = stringResource(R.string.home_screen),
+                value = stringResource(
+                    if (snapshot.screenOn) R.string.screen_on else R.string.screen_off
+                ),
+            )
+            snapshot.currentNowRaw?.let { raw ->
+                Text(
+                    text = stringResource(R.string.current_raw_note, raw),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SamplingCard(
+    state: MainUiState,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+    onRequestNotificationThenStart: () -> Unit,
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.sampling_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = if (state.samplingRunning) {
+                    stringResource(
+                        R.string.sampling_running,
+                        stringResource(intervalLabelRes(state)),
+                    )
+                } else {
+                    stringResource(R.string.sampling_stopped)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (!state.samplingRunning) {
+                Text(
+                    text = stringResource(R.string.permission_notifications_rationale),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Button(
+                onClick = if (state.samplingRunning) onStop else onRequestNotificationThenStart,
+            ) {
+                Text(
+                    stringResource(
+                        if (state.samplingRunning) R.string.sampling_stop
+                        else R.string.sampling_start
+                    )
+                )
+            }
+        }
+    }
+}
+
+private fun intervalLabelRes(state: MainUiState): Int = when (state.settings.samplingInterval) {
+    dev.ederfmatos.batterystats.data.prefs.SamplingInterval.THIRTY_SECONDS -> R.string.interval_30s
+    dev.ederfmatos.batterystats.data.prefs.SamplingInterval.ONE_MINUTE -> R.string.interval_1m
+    dev.ederfmatos.batterystats.data.prefs.SamplingInterval.FIVE_MINUTES -> R.string.interval_5m
+}
+
+@Composable
+private fun DrainCard(state: MainUiState) {
+    val period = state.periodStats ?: return
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                text = stringResource(R.string.drain_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            ReadingRow(
+                label = stringResource(R.string.drain_screen_on),
+                value = stringResource(
+                    R.string.drain_ma_and_pct,
+                    period.stats.screenOn.averageMilliAmps,
+                    period.stats.screenOn.percentPerHour,
+                ),
+            )
+            ReadingRow(
+                label = stringResource(R.string.drain_screen_off),
+                value = stringResource(
+                    R.string.drain_ma_and_pct,
+                    period.stats.screenOff.averageMilliAmps,
+                    period.stats.screenOff.percentPerHour,
+                ),
+            )
+            val hours = period.projection.hoursRemaining
+            Text(
+                text = if (hours != null && hours.isFinite()) {
+                    stringResource(R.string.drain_projection, formatHours(hours))
+                } else {
+                    stringResource(R.string.drain_projection_none)
+                },
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(R.string.drain_projection_basis),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (state.wakelockSuspicion) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.drain_wakelock_warning,
+                            period.stats.screenOff.averageMilliAmps,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadingRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        Text(text = value, style = MaterialTheme.typography.titleMedium)
+    }
+}

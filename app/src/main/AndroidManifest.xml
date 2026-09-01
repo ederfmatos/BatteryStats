@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      Nenhuma permissão de INTERNET, de propósito: o app é inteiramente local, sem analytics,
+      sem crash reporting e sem telemetria. Sem essa permissão declarada, nem uma dependência
+      transitiva consegue abrir socket.
+
+      BATTERY_STATS também não aparece aqui: é signature|privileged e um APK sideloadado nunca
+      receberia. O consumo por app deste app é estimado por correlação, não medido.
+    -->
+
+    <!-- Amostragem contínua sobrevive em foreground service; o tipo specialUse é o único honesto
+         para "monitorar a própria bateria". -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!-- A notificação persistente do foreground service (API 33+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Religar a amostragem depois do boot, atrás de um toggle nas configurações. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Pedir isenção da otimização de bateria; sem ela o app morre justamente enquanto mede. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Timeline de app em primeiro plano. Concedida na tela de Configurações, não em runtime. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <application
+        android:name=".BatteryStatsApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.BatteryStats">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.BatteryStats">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".data.sampling.SamplingService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Amostragem periódica do estado da bateria do próprio aparelho para análise local de consumo." />
+        </service>
+
+        <receiver
+            android:name=".data.receiver.BootCompletedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

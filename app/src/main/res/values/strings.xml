@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BatteryStats</string>
+
+    <!-- Tela inicial -->
+    <string name="home_title">Agora</string>
+    <string name="home_level">Nível</string>
+    <string name="home_status">Status</string>
+    <string name="home_source">Fonte</string>
+    <string name="home_temperature">Temperatura</string>
+    <string name="home_voltage">Voltagem</string>
+    <string name="home_current">Corrente instantânea</string>
+    <string name="home_charge_counter">Contador de carga</string>
+    <string name="home_screen">Tela</string>
+    <string name="home_reading_unavailable">Sem leitura da bateria</string>
+    <string name="home_reading_unavailable_detail">O sistema não devolveu o estado da bateria. Isso costuma ser transitório — a próxima leitura sai em alguns segundos.</string>
+
+    <string name="value_unavailable">indisponível</string>
+    <string name="unit_percent">%1$d%%</string>
+    <string name="unit_celsius">%1$.1f °C</string>
+    <string name="unit_volts">%1$.3f V</string>
+    <string name="unit_milliamps">%1$.0f mA</string>
+    <string name="unit_microamp_hours">%1$s µAh</string>
+
+    <string name="status_charging">Carregando</string>
+    <string name="status_discharging">Descarregando</string>
+    <string name="status_full">Cheia</string>
+    <string name="status_not_charging">Sem carregar</string>
+    <string name="status_unknown">Desconhecido</string>
+
+    <string name="plug_none">Na bateria</string>
+    <string name="plug_ac">Tomada (AC)</string>
+    <string name="plug_usb">USB</string>
+    <string name="plug_wireless">Sem fio</string>
+    <string name="plug_dock">Dock</string>
+    <string name="plug_unknown">Desconhecida</string>
+
+    <string name="screen_on">Ligada</string>
+    <string name="screen_off">Desligada</string>
+
+    <string name="current_raw_note">Valor bruto do aparelho: %1$d. A calibração define a unidade e o sinal.</string>
+
+    <!-- Notificação do serviço -->
+    <string name="notification_channel_name">Amostragem</string>
+    <string name="notification_channel_description">Notificação obrigatória enquanto o app está medindo a bateria.</string>
+    <string name="notification_title">Medindo a bateria</string>
+    <string name="notification_starting">Iniciando a amostragem…</string>
+    <string name="notification_level_only">%1$d%% — sem dados de dreno ainda</string>
+
+    <!-- Abas -->
+    <string name="tab_now">Agora</string>
+    <string name="tab_apps">Vilões</string>
+    <string name="tab_history">Histórico</string>
+    <string name="tab_diagnostics">Diagnóstico</string>
+    <string name="tab_settings">Ajustes</string>
+
+    <!-- Amostragem -->
+    <string name="sampling_title">Amostragem contínua</string>
+    <string name="sampling_running">Rodando a cada %1$s</string>
+    <string name="sampling_stopped">Parada. Sem amostragem não há histórico nem ranking.</string>
+    <string name="sampling_start">Iniciar</string>
+    <string name="sampling_stop">Parar</string>
+
+    <string name="interval_30s">30 segundos</string>
+    <string name="interval_1m">1 minuto</string>
+    <string name="interval_5m">5 minutos</string>
+
+    <!-- Permissões -->
+    <string name="permission_notifications_rationale">O Android exige uma notificação visível enquanto o app mede em segundo plano. Sem a permissão de notificação o serviço não sobe.</string>
+    <string name="permission_notifications_action">Permitir notificação</string>
+    <string name="permission_battery_title">Isenção de otimização de bateria</string>
+    <string name="permission_battery_rationale">Sem essa isenção o Android mata o app justamente quando ele está medindo: nas horas de tela desligada, que são o dado mais útil daqui. A isenção não faz o app consumir mais — ele continua acordando só no intervalo configurado.</string>
+    <string name="permission_battery_action">Pedir isenção</string>
+    <string name="permission_battery_granted">Isenção concedida</string>
+    <string name="permission_usage_title">Acesso ao uso de apps</string>
+    <string name="permission_usage_rationale">Serve para saber qual app estava na frente em cada janela de tempo. É o que permite montar o ranking. Sem isso o app continua medindo a bateria, só não sabe a quem atribuir o consumo.</string>
+    <string name="permission_usage_action">Abrir configurações de uso</string>
+    <string name="permission_usage_granted">Acesso concedido</string>
+
+    <!-- Vilões -->
+    <string name="apps_title">Vilões</string>
+    <string name="apps_period_today">Hoje</string>
+    <string name="apps_period_7d">7 dias</string>
+    <string name="apps_empty">Sem dados suficientes ainda. Deixe a amostragem rodando por algumas horas.</string>
+    <string name="apps_system_bucket">Sistema / segundo plano</string>
+    <string name="apps_foreground_time">%1$s em primeiro plano</string>
+    <string name="apps_mah">%1$.1f mAh</string>
+    <string name="apps_avg_ma">%1$.0f mA em foreground</string>
+    <string name="apps_disclaimer">Estimativa por correlação (dreno da janela × app em primeiro plano), não medição direta de consumo por app.</string>
+    <string name="apps_degraded">Sem acesso ao uso de apps: tudo que foi medido está no bucket de sistema.</string>
+
+    <!-- Histórico -->
+    <string name="history_title">Histórico</string>
+    <string name="history_level_chart">Nível ao longo do tempo</string>
+    <string name="history_level_legend">Faixa clara = tela ligada · marcador = início de carga</string>
+    <string name="history_hourly_chart">Dreno médio por hora do dia (7 dias)</string>
+    <string name="history_hourly_legend">Barras altas de madrugada indicam algo acordando o aparelho.</string>
+    <string name="history_empty">Ainda não há amostras suficientes para desenhar o gráfico.</string>
+
+    <!-- Saúde -->
+    <string name="health_title">Saúde da bateria (estimativa relativa)</string>
+    <string name="health_ratio">%1$.0f%% do melhor valor já observado</string>
+    <string name="health_detail">Cheia agora: %1$s µAh · melhor já visto: %2$s µAh</string>
+    <string name="health_insufficient">Precisa de pelo menos 7 dias de histórico com a bateria chegando perto de 100%%.</string>
+    <string name="health_disclaimer">Comparação com o histórico do próprio app. A capacidade de projeto não é exposta por API pública, então não existe um número absoluto de saúde aqui.</string>
+
+    <!-- Dreno -->
+    <string name="drain_title">Dreno</string>
+    <string name="drain_screen_on">Tela ligada</string>
+    <string name="drain_screen_off">Tela desligada</string>
+    <string name="drain_ma_and_pct">%1$.0f mA · %2$.1f %%/h</string>
+    <string name="drain_projection">Autonomia projetada: %1$s</string>
+    <string name="drain_projection_none">Autonomia projetada: sem dados suficientes</string>
+    <string name="drain_projection_basis">Baseada no padrão real das últimas 24h, não no consumo do último minuto.</string>
+    <string name="drain_wakelock_warning">Dreno alto com a tela desligada (%1$.0f mA). Isso costuma ser wakelock preso — algo mantendo o aparelho acordado.</string>
+    <string name="duration_hm">%1$dh%2$02d</string>
+
+    <!-- Diagnóstico -->
+    <string name="diagnostics_title">Diagnóstico</string>
+    <string name="diagnostics_device">Aparelho</string>
+    <string name="diagnostics_android">Android</string>
+    <string name="diagnostics_samples">Amostras no banco</string>
+    <string name="diagnostics_gaps">Buracos de amostragem (24h)</string>
+    <string name="diagnostics_calibration">Calibração de CURRENT_NOW</string>
+    <string name="diagnostics_calibration_value">Divisor %1$d · sinal %2$s · origem %3$s (%4$d janelas)</string>
+    <string name="diagnostics_sign_normal">documentado</string>
+    <string name="diagnostics_sign_inverted">invertido</string>
+    <string name="diagnostics_source_default">padrão</string>
+    <string name="diagnostics_source_auto">automática</string>
+    <string name="diagnostics_source_manual">manual</string>
+    <string name="diagnostics_force_title">Forçar calibração</string>
+    <string name="diagnostics_force_ua">µA (dividir por 1000)</string>
+    <string name="diagnostics_force_ma">mA (não dividir)</string>
+    <string name="diagnostics_force_invert">Inverter o sinal</string>
+    <string name="diagnostics_recalibrate">Recalibrar agora</string>
+    <string name="diagnostics_permissions">Permissões</string>
+    <string name="diagnostics_granted">concedida</string>
+    <string name="diagnostics_denied">negada</string>
+
+    <!-- Ajustes -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_interval">Intervalo de amostragem</string>
+    <string name="settings_boot">Religar após reiniciar o aparelho</string>
+    <string name="settings_export">Exportar dados</string>
+    <string name="settings_export_csv">Exportar CSV</string>
+    <string name="settings_export_json">Exportar JSON</string>
+    <string name="settings_export_done">Arquivo salvo.</string>
+    <string name="settings_export_failed">Não foi possível salvar o arquivo.</string>
+    <string name="settings_retention">Amostras cruas são apagadas depois de 14 dias. Os resumos diários ficam para sempre.</string>
+</resources>
