@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +23,7 @@ import dev.ederfmatos.batterystats.data.work.UpdateCheckWorker
 import dev.ederfmatos.batterystats.domain.update.InstallStep
 import dev.ederfmatos.batterystats.domain.update.UpdateManifest
 import dev.ederfmatos.batterystats.ui.AppRoot
+import dev.ederfmatos.batterystats.ui.SubScreen
 import dev.ederfmatos.batterystats.ui.MainViewModel
 import dev.ederfmatos.batterystats.ui.report.ReportViewModel
 import dev.ederfmatos.batterystats.ui.theme.BatteryStatsTheme
@@ -33,9 +35,14 @@ class MainActivity : ComponentActivity() {
 
     private var pendingExportUri: Uri? = null
 
+    /**
+     * O formato é deduzido da extensão que o próprio app sugeriu, e não de um estado guardado
+     * entre o launch e o callback: o seletor SAF sai do processo, e num aparelho que mata
+     * processo agressivamente esse estado se perde — gravando o formato errado sem avisar.
+     */
     private val createDocument = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.CreateDocument("*/*")
-    ) { uri -> if (uri != null) export(uri, asJson = uri.toString().endsWith(".json")) }
+    ) { uri -> if (uri != null) export(uri, asJson = !uri.toString().endsWith(".csv")) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,9 +52,18 @@ class MainActivity : ComponentActivity() {
 
         val container = application.appContainer
         val needsRecovery = application.let { it as BatteryStatsApplication }.needsRecovery
+        val openUpdate = intent?.getBooleanExtra(EXTRA_OPEN_UPDATE, false) == true
 
         setContent {
-            BatteryStatsTheme {
+            val viewModelForTheme: MainViewModel = viewModel(
+                factory = MainViewModel.Factory(application)
+            )
+            val themeState by viewModelForTheme.uiState.collectAsStateWithLifecycle()
+
+            BatteryStatsTheme(
+                themeMode = themeState.settings.themeMode,
+                dynamicColor = themeState.settings.dynamicColorEnabled,
+            ) {
                 var recoveryDismissed by remember { mutableStateOf(false) }
 
                 if (needsRecovery && !recoveryDismissed) {
@@ -63,28 +79,29 @@ class MainActivity : ComponentActivity() {
                     return@BatteryStatsTheme
                 }
 
-                val viewModel: MainViewModel = viewModel(
-                    factory = MainViewModel.Factory(application)
-                )
+                val viewModel = viewModelForTheme
                 val updateViewModel: UpdateViewModel = viewModel(
                     factory = UpdateViewModel.Factory(application)
                 )
                 val reportViewModel: ReportViewModel = viewModel(
                     factory = ReportViewModel.Factory(application)
                 )
-                val state by viewModel.uiState.collectAsStateWithLifecycle()
+                val state = themeState
+                val snackbarHostState = remember { SnackbarHostState() }
                 val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
                 val reportState by reportViewModel.uiState.collectAsStateWithLifecycle()
 
                 AppRoot(
+                    initialSubScreen = if (openUpdate) SubScreen.UPDATE else null,
                     state = state,
                     updateState = updateState,
+                    reportState = reportState,
+                    snackbarHostState = snackbarHostState,
                     onCheckUpdate = updateViewModel::check,
                     onDownloadAndInstall = updateViewModel::downloadAndInstall,
                     onRetryInstallAt = ::onRetryInstallAt,
                     onCancelUpdate = updateViewModel::cancel,
                     onExportRequested = { createDocument.launch("batterystats.json") },
-                    reportState = reportState,
                     onGenerateReport = reportViewModel::generate,
                     onShareReport = { reportViewModel.shareIntent(::startActivitySafely) },
                     onCopyReport = {
@@ -107,9 +124,14 @@ class MainActivity : ComponentActivity() {
                     onPeriodChange = viewModel::setAppPeriod,
                     onIntervalChange = viewModel::setSamplingInterval,
                     onStartOnBootChange = viewModel::setStartOnBoot,
+                    onUpdateNotificationsChange = viewModel::setUpdateNotificationsEnabled,
+                    onThemeModeChange = viewModel::setThemeMode,
+                    onDynamicColorChange = viewModel::setDynamicColorEnabled,
                     onForceCalibration = viewModel::forceCalibration,
                     onRecalibrate = viewModel::recalibrate,
-                    onExport = ::export,
+                    onOpenUsageSettings = viewModel::openUsageSettings,
+                    onExportCsv = { createDocument.launch("batterystats.csv") },
+                    onExportJson = { createDocument.launch("batterystats.json") },
                 )
 
                 // A UI subiu inteira: a versão instalada é considerada boa.
@@ -172,7 +194,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private companion object {
-        const val TAG = "MainActivity"
+    companion object {
+        private const val TAG = "MainActivity"
+
+        /** Posto pela notificação de versão nova, para abrir direto na tela de Atualização. */
+        const val EXTRA_OPEN_UPDATE = "abrir_atualizacao"
     }
 }

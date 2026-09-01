@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.ederfmatos.batterystats.R
 import dev.ederfmatos.batterystats.ui.MainUiState
+import dev.ederfmatos.batterystats.ui.common.LabeledRow
 import dev.ederfmatos.batterystats.ui.common.formatDuration
 
 /**
@@ -67,7 +68,7 @@ fun CollectionHealthScreen(state: MainUiState, modifier: Modifier = Modifier) {
                         progress = { coverage.fraction.toFloat().coerceIn(0f, 1f) },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    InfoRow(
+                    LabeledRow(
                         stringResource(R.string.health_collection_gaps),
                         stringResource(
                             R.string.coverage_gaps,
@@ -75,7 +76,7 @@ fun CollectionHealthScreen(state: MainUiState, modifier: Modifier = Modifier) {
                             formatDuration(coverage.gapMs),
                         ),
                     )
-                    InfoRow(
+                    LabeledRow(
                         stringResource(R.string.health_collection_service_deaths),
                         state.serviceKillCount.toString(),
                     )
@@ -149,16 +150,6 @@ private fun openExactAlarmSettings(context: android.content.Context) {
     }
 }
 
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Text(text = value, style = MaterialTheme.typography.titleSmall)
-    }
-}
+
 
 private const val TAG = "CollectionHealthScreen"

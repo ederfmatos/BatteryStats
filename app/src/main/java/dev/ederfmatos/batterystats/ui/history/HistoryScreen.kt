@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,9 +18,15 @@ import androidx.compose.ui.unit.dp
 import dev.ederfmatos.batterystats.R
 import dev.ederfmatos.batterystats.ui.MainUiState
 import dev.ederfmatos.batterystats.ui.common.groupedDigits
+import dev.ederfmatos.batterystats.ui.theme.LocalChartColors
 
 @Composable
-fun HistoryScreen(state: MainUiState, modifier: Modifier = Modifier) {
+fun HistoryScreen(
+    state: MainUiState,
+    onOpenReport: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val chartColors = LocalChartColors.current
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -42,12 +49,14 @@ fun HistoryScreen(state: MainUiState, modifier: Modifier = Modifier) {
                         text = stringResource(R.string.history_level_chart),
                         style = MaterialTheme.typography.titleMedium,
                     )
+                    // Cores próprias, fora do ColorScheme: sob Material You primary e tertiary
+                    // derivam do mesmo papel de parede e os marcadores de carga sumiriam na linha.
                     LevelOverTimeChart(
                         samples = state.history,
-                        lineColor = MaterialTheme.colorScheme.primary,
-                        screenOnColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        chargeMarkerColor = MaterialTheme.colorScheme.tertiary,
-                        gridColor = MaterialTheme.colorScheme.outlineVariant,
+                        lineColor = chartColors.levelLine,
+                        screenOnColor = chartColors.screenOnBand,
+                        chargeMarkerColor = chartColors.chargeMarker,
+                        gridColor = chartColors.grid,
                     )
                     Text(
                         text = stringResource(R.string.history_level_legend),
@@ -68,8 +77,8 @@ fun HistoryScreen(state: MainUiState, modifier: Modifier = Modifier) {
                     )
                     HourlyDrainChart(
                         hourly = hourly,
-                        barColor = MaterialTheme.colorScheme.primary,
-                        gridColor = MaterialTheme.colorScheme.outlineVariant,
+                        barColor = chartColors.drainBar,
+                        gridColor = chartColors.grid,
                     )
                     Text(
                         text = stringResource(R.string.history_hourly_legend),
@@ -81,6 +90,12 @@ fun HistoryScreen(state: MainUiState, modifier: Modifier = Modifier) {
         }
 
         HealthCard(state)
+
+        // O relatório é o payoff do app, mas não é diário: fica a um toque de onde os dados que
+        // ele resume estão sendo olhados, em vez de ocupar uma aba permanente.
+        TextButton(onClick = onOpenReport) {
+            Text(stringResource(R.string.report_share))
+        }
     }
 }
 

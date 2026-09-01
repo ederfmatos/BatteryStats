@@ -10,20 +10,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.ederfmatos.batterystats.R
-import dev.ederfmatos.batterystats.data.usage.UsageAccess
 import dev.ederfmatos.batterystats.domain.model.CurrentCalibration
 import dev.ederfmatos.batterystats.ui.MainUiState
+import dev.ederfmatos.batterystats.ui.common.LabeledRow
 import dev.ederfmatos.batterystats.ui.common.PermissionCard
 import dev.ederfmatos.batterystats.ui.common.groupedDigits
 import dev.ederfmatos.batterystats.ui.common.label
@@ -33,10 +38,10 @@ fun DiagnosticsScreen(
     state: MainUiState,
     onForceCalibration: (divisor: Int, inverted: Boolean) -> Unit,
     onRecalibrate: () -> Unit,
+    onOpenUsageSettings: () -> Unit,
     onPermissionsChanged: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -46,25 +51,25 @@ fun DiagnosticsScreen(
     ) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                InfoRow(
+                LabeledRow(
                     stringResource(R.string.diagnostics_device),
                     "${Build.MANUFACTURER} ${Build.MODEL}",
                 )
-                InfoRow(
+                LabeledRow(
                     stringResource(R.string.diagnostics_android),
                     "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
                 )
-                InfoRow(
+                LabeledRow(
                     stringResource(R.string.diagnostics_samples),
                     state.sampleCount.toString(),
                 )
-                InfoRow(
+                LabeledRow(
                     stringResource(R.string.diagnostics_gaps),
                     (state.periodStats?.analysis?.gaps?.size ?: 0).toString(),
                 )
                 val coverage = state.periodStats?.coverage
                 if (coverage != null) {
-                    InfoRow(
+                    LabeledRow(
                         stringResource(R.string.coverage_label),
                         stringResource(
                             R.string.coverage_value,
@@ -76,7 +81,7 @@ fun DiagnosticsScreen(
                 QuantizationRow(state)
                 val stats = state.periodStats?.stats
                 if (stats != null) {
-                    InfoRow(
+                    LabeledRow(
                         stringResource(R.string.diagnostics_windows),
                         stringResource(
                             R.string.windows_confidence,
@@ -96,14 +101,14 @@ fun DiagnosticsScreen(
                     text = stringResource(R.string.diagnostics_permissions),
                     style = MaterialTheme.typography.titleMedium,
                 )
-                InfoRow(
+                LabeledRow(
                     stringResource(R.string.permission_usage_title),
                     stringResource(
                         if (state.hasUsageAccess) R.string.diagnostics_granted
                         else R.string.diagnostics_denied
                     ),
                 )
-                InfoRow(
+                LabeledRow(
                     stringResource(R.string.permission_battery_title),
                     stringResource(
                         if (state.ignoringBatteryOptimizations) R.string.diagnostics_granted
@@ -119,7 +124,7 @@ fun DiagnosticsScreen(
                 rationale = stringResource(R.string.permission_usage_rationale),
                 actionLabel = stringResource(R.string.permission_usage_action),
                 onAction = {
-                    UsageAccess.openSettings(context)
+                    onOpenUsageSettings()
                     onPermissionsChanged()
                 },
             )
@@ -135,7 +140,7 @@ fun DiagnosticsScreen(
 private fun QuantizationRow(state: MainUiState) {
     val stepUah = state.settings.quantizationStepUah
     val intervalMs = state.settings.samplingInterval.millis
-    InfoRow(
+    LabeledRow(
         stringResource(R.string.quantization_label),
         if (stepUah <= 0L) {
             stringResource(R.string.quantization_none)
@@ -182,22 +187,34 @@ private fun CalibrationCard(
                 text = stringResource(R.string.diagnostics_force_title),
                 style = MaterialTheme.typography.titleSmall,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                SegmentedButton(
                     selected = calibration.divisor == 1000,
                     onClick = { onForceCalibration(1000, calibration.inverted) },
-                    label = { Text(stringResource(R.string.diagnostics_force_ua)) },
-                )
-                FilterChip(
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                ) {
+                    Text(stringResource(R.string.diagnostics_force_ua))
+                }
+                SegmentedButton(
                     selected = calibration.divisor == 1,
                     onClick = { onForceCalibration(1, calibration.inverted) },
-                    label = { Text(stringResource(R.string.diagnostics_force_ma)) },
-                )
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                ) {
+                    Text(stringResource(R.string.diagnostics_force_ma))
+                }
             }
-            FilterChip(
-                selected = calibration.inverted,
-                onClick = { onForceCalibration(calibration.divisor, !calibration.inverted) },
-                label = { Text(stringResource(R.string.diagnostics_force_invert)) },
+            // Booleano é Switch, não chip: sem o role certo o TalkBack não anuncia ligado/desligado.
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.diagnostics_force_invert)) },
+                trailingContent = {
+                    Switch(
+                        checked = calibration.inverted,
+                        onCheckedChange = {
+                            onForceCalibration(calibration.divisor, it)
+                        },
+                    )
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             )
             TextButton(onClick = onRecalibrate) {
                 Text(stringResource(R.string.diagnostics_recalibrate))
@@ -212,14 +229,4 @@ private fun CurrentCalibration.Source.labelRes(): Int = when (this) {
     CurrentCalibration.Source.MANUAL -> R.string.diagnostics_source_manual
 }
 
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Text(text = value, style = MaterialTheme.typography.titleSmall)
-    }
-}
+

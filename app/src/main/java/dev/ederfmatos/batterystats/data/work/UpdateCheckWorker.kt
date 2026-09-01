@@ -12,6 +12,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dev.ederfmatos.batterystats.appContainer
 import dev.ederfmatos.batterystats.data.update.UpdateCheck
+import kotlinx.coroutines.flow.first
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -32,9 +33,7 @@ class UpdateCheckWorker(
         return try {
             container.remoteConfigRepository.refresh()
             when (val check = container.updateRepository.check()) {
-                is UpdateCheck.Available ->
-                    Log.i(TAG, "Versão ${check.manifest.versionName} disponível")
-
+                is UpdateCheck.Available -> notifyOnce(container, check)
                 is UpdateCheck.Failed -> Log.i(TAG, "Checagem falhou: ${check.reason}")
                 else -> Unit
             }
@@ -45,12 +44,36 @@ class UpdateCheckWorker(
         }
     }
 
+    /**
+     * Anuncia uma versão só uma vez. Sem essa marca d'água, a mesma atualização geraria uma
+     * notificação a cada checagem até o usuário instalar — que é como um app ensina alguém a
+     * silenciar o canal inteiro.
+     */
+    private suspend fun notifyOnce(
+        container: dev.ederfmatos.batterystats.AppContainer,
+        check: UpdateCheck.Available,
+    ) {
+        val settings = container.settingsRepository.settings.first()
+        if (!settings.updateNotificationsEnabled) return
+        if (settings.lastNotifiedVersionCode >= check.manifest.versionCode) return
+
+        Log.i(TAG, "Anunciando a versão ${check.manifest.versionName}")
+        container.updateNotifications.notifyAvailable(check.manifest)
+        container.settingsRepository.setLastNotifiedVersionCode(check.manifest.versionCode)
+    }
+
     companion object {
         private const val TAG = "UpdateCheckWorker"
         private const val WORK_NAME = "checagem-atualizacao"
 
+        /** Quatro checagens por dia. Cada uma é um GET de 1 KB, só em rede não medida. */
+        const val CHECK_INTERVAL_HOURS = 6L
+
         fun schedule(context: Context) {
-            val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(1, TimeUnit.DAYS)
+            val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(
+                CHECK_INTERVAL_HOURS,
+                TimeUnit.HOURS,
+            )
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.UNMETERED)
@@ -58,9 +81,11 @@ class UpdateCheckWorker(
                         .build()
                 )
                 .build()
+            // UPDATE, não KEEP: se o intervalo mudar numa versão futura, o trabalho já agendado
+            // precisa ser substituído em vez de manter o antigo para sempre.
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 request,
             )
         }

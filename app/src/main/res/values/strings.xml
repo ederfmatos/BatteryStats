@@ -85,8 +85,9 @@
     <string name="apps_system_bucket">Sistema / segundo plano</string>
     <string name="apps_foreground_time">%1$s em primeiro plano</string>
     <string name="apps_mah">%1$.1f mAh</string>
+    <string name="apps_mah_estimated">≈ %1$.1f mAh</string>
     <string name="apps_avg_ma">%1$.0f mA em foreground</string>
-    <string name="apps_disclaimer">Estimativa por correlação (dreno da janela × app em primeiro plano), não medição direta de consumo por app.</string>
+    <string name="apps_disclaimer">≈ estimativa por correlação, não medição por app</string>
     <string name="apps_degraded">Sem acesso ao uso de apps: tudo que foi medido está no bucket de sistema.</string>
 
     <!-- Histórico -->
@@ -253,4 +254,34 @@
     <string name="report_no_target">Nenhum app respondeu ao link. Use o botão de compartilhar.</string>
     <string name="report_regenerate">Gerar de novo</string>
     <string name="report_size">%1$d caracteres</string>
+
+    <!-- Navegação e aparência (revisão de UI) -->
+    <string name="action_back">Voltar</string>
+    <string name="settings_appearance">Aparência</string>
+    <string name="settings_collection_health">Saúde da coleta</string>
+    <string name="settings_update">Atualização</string>
+    <string name="settings_report">Relatório</string>
+    <string name="settings_diagnostics">Diagnóstico</string>
+    <string name="theme_title">Tema</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="theme_dynamic_color">Cores do sistema</string>
+    <string name="theme_dynamic_color_rationale">Usa a paleta do papel de parede (Material You). Desligue se as cores dos gráficos ficarem parecidas demais entre si.</string>
+    <string name="coverage_fix_action">Corrigir</string>
+    <string name="unit_megabytes">%1$.1f MB</string>
+    <string name="report_attach_raw_label">Anexar o JSON cru ao compartilhar</string>
+    <string name="empty_never_measured">Nada medido ainda. Toque em Iniciar para o app começar a amostrar a bateria.</string>
+    <string name="empty_progress_to_ranking">Medindo há %1$s. O ranking por app precisa de algumas horas de janelas confiáveis.</string>
+    <string name="apps_window_count">%1$d janelas</string>
+
+    <string name="chart_level_description">Gráfico do nível da bateria: de %1$d%% a %2$d%% ao longo de %3$d horas.</string>
+    <string name="chart_hourly_description">Gráfico de dreno por hora: o pico é às %1$dh, com %2$d miliampères.</string>
+
+    <!-- Notificação de versão nova -->
+    <string name="update_channel_name">Atualizações</string>
+    <string name="update_channel_description">Aviso quando uma versão nova do app é publicada.</string>
+    <string name="update_notification_title">BatteryStats %1$s disponível</string>
+    <string name="update_notification_text">Toque para ver e instalar.</string>
+    <string name="settings_update_notifications">Avisar sobre versões novas</string>
 </resources>

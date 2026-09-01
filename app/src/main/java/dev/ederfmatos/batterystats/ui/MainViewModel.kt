@@ -37,6 +37,8 @@ data class MainUiState(
     val appPeriod: StatsPeriod = StatsPeriod.TODAY,
     val history: List<BatterySnapshot> = emptyList(),
     val sampleCount: Int = 0,
+    /** Instante da amostra mais antiga ainda no banco. 0 quando não há nenhuma. */
+    val firstSampleMs: Long = 0L,
     val health: BatteryHealthEstimate? = null,
     val serviceKillCount: Int = 0,
     val canScheduleExactAlarms: Boolean = true,
@@ -107,6 +109,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 .getOrDefault(0)
 
             _uiState.value = _uiState.value.copy(
+                firstSampleMs = history.firstOrNull()?.timestampMs ?: 0L,
                 periodStats = stats,
                 wakelockSuspicion = stats?.stats?.let { wakelockDetector.isSuspicious(it) } ?: false,
                 appRanking = ranking,
@@ -136,6 +139,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setStartOnBoot(enabled: Boolean) {
         viewModelScope.launch { container.settingsRepository.setStartOnBoot(enabled) }
+    }
+
+    fun setThemeMode(mode: dev.ederfmatos.batterystats.data.prefs.ThemeMode) {
+        viewModelScope.launch { container.settingsRepository.setThemeMode(mode) }
+    }
+
+    fun setDynamicColorEnabled(enabled: Boolean) {
+        viewModelScope.launch { container.settingsRepository.setDynamicColorEnabled(enabled) }
+    }
+
+    fun setUpdateNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            container.settingsRepository.setUpdateNotificationsEnabled(enabled)
+        }
+    }
+
+    fun openUsageSettings() {
+        dev.ederfmatos.batterystats.data.usage.UsageAccess.openSettings(getApplication())
     }
 
     fun forceCalibration(divisor: Int, inverted: Boolean) {

@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.BatteryStats" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+      O Compose pinta tudo, mas a janela inicial (starting window) vem daqui. Sem windowBackground
+      o arranque pisca o cinza padrão do framework antes do primeiro frame.
+    -->
+    <style name="Theme.BatteryStats" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
 </resources>

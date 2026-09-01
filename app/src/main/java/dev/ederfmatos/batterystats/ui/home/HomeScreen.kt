@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -32,7 +33,9 @@ import dev.ederfmatos.batterystats.domain.drain.Coverage
 import dev.ederfmatos.batterystats.domain.drain.RegimeStats
 import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
 import dev.ederfmatos.batterystats.ui.MainUiState
+import dev.ederfmatos.batterystats.ui.common.LabeledRow
 import dev.ederfmatos.batterystats.ui.common.PermissionCard
+import dev.ederfmatos.batterystats.ui.common.formatDuration
 import dev.ederfmatos.batterystats.ui.common.formatHours
 import dev.ederfmatos.batterystats.ui.common.groupedDigits
 import dev.ederfmatos.batterystats.ui.common.label
@@ -43,6 +46,7 @@ fun HomeScreen(
     onStartSampling: () -> Unit,
     onStopSampling: () -> Unit,
     onPermissionsChanged: () -> Unit,
+    onFixCoverage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -63,7 +67,7 @@ fun HomeScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        CoverageBanner(state)
+        CoverageBanner(state, onFixCoverage)
 
         val snapshot = state.snapshot
         if (snapshot == null) {
@@ -104,8 +108,15 @@ fun HomeScreen(
  * Banner persistente de cobertura baixa. Fica no topo da home de propósito: com 59% do tempo em
  * buracos, todo número abaixo dele descreve outra coisa que não o dia do usuário.
  */
+/**
+ * Banner de cobertura baixa.
+ *
+ * Afirma o fato e oferece a ação. As instruções de 40 palavras vivem só em Saúde da coleta — antes
+ * o mesmo parágrafo aparecia nas duas telas, e repetir um texto longo na tela diária é o método
+ * mais eficiente de treinar alguém a não lê-lo.
+ */
 @Composable
-private fun CoverageBanner(state: MainUiState) {
+private fun CoverageBanner(state: MainUiState, onFix: () -> Unit) {
     val coverage = state.periodStats?.coverage ?: return
     if (!coverage.isPoor) return
     Card(
@@ -114,17 +125,15 @@ private fun CoverageBanner(state: MainUiState) {
             containerColor = MaterialTheme.colorScheme.errorContainer,
         ),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = stringResource(R.string.home_coverage_banner, coverage.percent.toInt()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
-            Text(
-                text = stringResource(R.string.health_collection_samsung_steps),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-            )
+            TextButton(onClick = onFix) {
+                Text(stringResource(R.string.coverage_fix_action))
+            }
         }
     }
 }
@@ -174,28 +183,28 @@ private fun ReadingsCard(snapshot: BatterySnapshot, currentMilliAmps: Double?) {
     val unavailable = stringResource(R.string.value_unavailable)
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            ReadingRow(
+            LabeledRow(
                 label = stringResource(R.string.home_temperature),
                 value = snapshot.temperatureCelsius
                     ?.let { stringResource(R.string.unit_celsius, it) } ?: unavailable,
             )
-            ReadingRow(
+            LabeledRow(
                 label = stringResource(R.string.home_voltage),
                 value = snapshot.voltageVolts
                     ?.let { stringResource(R.string.unit_volts, it) } ?: unavailable,
             )
-            ReadingRow(
+            LabeledRow(
                 label = stringResource(R.string.home_current),
                 value = currentMilliAmps
                     ?.let { stringResource(R.string.unit_milliamps, it) } ?: unavailable,
             )
-            ReadingRow(
+            LabeledRow(
                 label = stringResource(R.string.home_charge_counter),
                 value = snapshot.chargeCounterUah
                     ?.let { stringResource(R.string.unit_microamp_hours, it.groupedDigits()) }
                     ?: unavailable,
             )
-            ReadingRow(
+            LabeledRow(
                 label = stringResource(R.string.home_screen),
                 value = stringResource(
                     if (snapshot.screenOn) R.string.screen_on else R.string.screen_off
@@ -263,9 +272,20 @@ private fun intervalLabelRes(state: MainUiState): Int = when (state.settings.sam
     dev.ederfmatos.batterystats.data.prefs.SamplingInterval.FIVE_MINUTES -> R.string.interval_5m
 }
 
+/**
+ * O bloco de dreno.
+ *
+ * Enquanto não há janela nenhuma fechada, mostra o que falta em vez de zeros: um app que exibe
+ * "0 mA · 0,0 %/h" na primeira hora está afirmando uma medição que não fez, que é exatamente o
+ * defeito que o resto do app existe para evitar.
+ */
 @Composable
 private fun DrainCard(state: MainUiState) {
     val period = state.periodStats ?: return
+    if (period.stats.windowCount == 0) {
+        NoMeasurementYetCard(state)
+        return
+    }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
@@ -316,7 +336,7 @@ private fun DrainCard(state: MainUiState) {
  */
 @Composable
 private fun RegimeRow(label: String, regime: RegimeStats) {
-    ReadingRow(
+    LabeledRow(
         label = label,
         value = if (regime.isCoarse) {
             stringResource(
@@ -339,7 +359,7 @@ private fun RegimeRow(label: String, regime: RegimeStats) {
 
 @Composable
 private fun CoverageRow(coverage: Coverage) {
-    ReadingRow(
+    LabeledRow(
         label = stringResource(R.string.coverage_label),
         value = stringResource(
             R.string.coverage_value,
@@ -356,14 +376,35 @@ private fun CoverageRow(coverage: Coverage) {
     }
 }
 
+/**
+ * O que aparece no lugar do bloco de dreno enquanto nenhuma janela fechou.
+ *
+ * Um app que exibe "0 mA · 0,0 %/h" na primeira hora está afirmando uma medição que não fez —
+ * exatamente o defeito que o resto do app existe para evitar.
+ */
 @Composable
-private fun ReadingRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Text(text = value, style = MaterialTheme.typography.titleMedium)
+private fun NoMeasurementYetCard(state: MainUiState) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.drain_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            if (state.sampleCount == 0) {
+                Text(
+                    text = stringResource(R.string.empty_never_measured),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            } else {
+                Text(
+                    text = stringResource(
+                        R.string.empty_progress_to_ranking,
+                        formatDuration(System.currentTimeMillis() - state.firstSampleMs),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            }
+        }
     }
 }

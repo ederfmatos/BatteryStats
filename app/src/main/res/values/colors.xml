@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#2E6B4F</color>
+    <!-- Igual ao `surface` do tema claro do Compose, para o arranque não piscar. -->
+    <color name="window_background">#F6FBF4</color>
 </resources>

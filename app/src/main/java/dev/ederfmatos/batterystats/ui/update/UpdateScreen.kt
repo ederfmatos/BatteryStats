@@ -306,13 +306,17 @@ private fun HistoryCard(attempts: List<UpdateAttempt>) {
                 )
             } else {
                 attempts.forEach { attempt ->
+                    // O nome do enum ("CONFLICT") nunca vai para a tela: esta é justamente a tela
+                    // que existe para dizer onde a atualização travou.
+                    val outcome = attempt.failure
+                        ?.let { failure -> stringResource(messageFor(failure)) }
+                        ?: stringResource(R.string.update_history_ok)
                     Text(
                         text = stringResource(
                             R.string.update_history_entry,
                             attempt.versionCode,
                             stringResource(stepLabel(attempt.step)),
-                            attempt.failure?.name
-                                ?: stringResource(R.string.update_history_ok),
+                            outcome,
                         ),
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -353,7 +357,10 @@ private fun openLink(context: Context) {
 private fun copyLink(context: Context) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
     clipboard?.setPrimaryClip(
-        ClipData.newPlainText("BatteryStats APK", UpdateEndpoints.LATEST_APK_URL)
+        ClipData.newPlainText(
+            context.getString(R.string.app_name),
+            UpdateEndpoints.LATEST_APK_URL,
+        )
     )
     Toast.makeText(context, R.string.update_link_copied, Toast.LENGTH_SHORT).show()
 }
@@ -369,7 +376,8 @@ private fun shareLink(context: Context) {
     }
 }
 
+@Composable
 private fun formatBytes(bytes: Long): String =
-    String.format(java.util.Locale.getDefault(), "%.1f MB", bytes / 1_048_576.0)
+    stringResource(R.string.unit_megabytes, bytes / 1_048_576.0)
 
 private const val TAG = "UpdateScreen"

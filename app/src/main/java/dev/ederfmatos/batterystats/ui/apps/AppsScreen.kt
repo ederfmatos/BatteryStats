@@ -13,7 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,6 +35,7 @@ import dev.ederfmatos.batterystats.appContainerFromContext
 import dev.ederfmatos.batterystats.data.StatsPeriod
 import dev.ederfmatos.batterystats.domain.attribution.AppEnergyUsage
 import dev.ederfmatos.batterystats.ui.MainUiState
+import dev.ederfmatos.batterystats.ui.common.PermissionCard
 import dev.ederfmatos.batterystats.ui.common.formatDuration
 
 /**
@@ -43,32 +46,41 @@ import dev.ederfmatos.batterystats.ui.common.formatDuration
 fun AppsScreen(
     state: MainUiState,
     onPeriodChange: (StatsPeriod) -> Unit,
+    onOpenUsageSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxSize()) {
-        Row(
+        // Escolha exclusiva: SegmentedButton, não FilterChip — FilterChip comunica filtros
+        // múltiplos e independentes, que não é o caso aqui.
+        SingleChoiceSegmentedButtonRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FilterChip(
+            SegmentedButton(
                 selected = state.appPeriod == StatsPeriod.TODAY,
                 onClick = { onPeriodChange(StatsPeriod.TODAY) },
-                label = { Text(stringResource(R.string.apps_period_today)) },
-            )
-            FilterChip(
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            ) {
+                Text(stringResource(R.string.apps_period_today))
+            }
+            SegmentedButton(
                 selected = state.appPeriod == StatsPeriod.LAST_7_DAYS,
                 onClick = { onPeriodChange(StatsPeriod.LAST_7_DAYS) },
-                label = { Text(stringResource(R.string.apps_period_7d)) },
-            )
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            ) {
+                Text(stringResource(R.string.apps_period_7d))
+            }
         }
 
+        // A permissão é pedida aqui, e não numa aba de manutenção: este é o momento em que ela
+        // faz falta — o usuário abriu o ranking e ele está vazio.
         if (!state.hasUsageAccess) {
-            Text(
-                text = stringResource(R.string.apps_degraded),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            PermissionCard(
+                title = stringResource(R.string.permission_usage_title),
+                rationale = stringResource(R.string.permission_usage_rationale),
+                actionLabel = stringResource(R.string.permission_usage_action),
+                onAction = onOpenUsageSettings,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
         }
@@ -82,8 +94,17 @@ fun AppsScreen(
                     .padding(24.dp),
                 contentAlignment = Alignment.Center,
             ) {
+                // Uma espera com prazo é tolerável; um "ainda não" indefinido faz qualquer um
+                // concluir que o app está quebrado.
                 Text(
-                    text = stringResource(R.string.apps_empty),
+                    text = if (state.sampleCount == 0) {
+                        stringResource(R.string.empty_never_measured)
+                    } else {
+                        stringResource(
+                            R.string.empty_progress_to_ranking,
+                            formatDuration(System.currentTimeMillis() - state.firstSampleMs),
+                        )
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -176,8 +197,10 @@ private fun AppRow(usage: AppEnergyUsage) {
                     )
                 }
             }
+            // O "≈" marca estimativa no próprio número. Um glifo repetido em toda estimativa é
+            // aprendido em um dia; um parágrafo de aviso em toda tela é ignorado em uma semana.
             Text(
-                text = stringResource(R.string.apps_mah, usage.estimatedMilliAmpHours),
+                text = stringResource(R.string.apps_mah_estimated, usage.estimatedMilliAmpHours),
                 style = MaterialTheme.typography.titleMedium,
             )
         }

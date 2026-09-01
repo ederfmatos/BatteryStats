@@ -19,6 +19,7 @@ import dev.ederfmatos.batterystats.data.update.ApkVerifier
 import dev.ederfmatos.batterystats.data.update.CrashGuard
 import dev.ederfmatos.batterystats.data.update.RemoteConfigRepository
 import dev.ederfmatos.batterystats.data.update.UpdateChecker
+import dev.ederfmatos.batterystats.data.update.UpdateNotifications
 import dev.ederfmatos.batterystats.data.report.ReportBuilder
 import dev.ederfmatos.batterystats.data.report.ReportSharer
 import dev.ederfmatos.batterystats.data.update.UpdateRepository
@@ -63,6 +64,8 @@ class AppContainer(context: Context) {
     }
 
     val crashGuard: CrashGuard by lazy { CrashGuard(appContext) }
+
+    val updateNotifications: UpdateNotifications by lazy { UpdateNotifications(appContext) }
 
     val updateRepository: UpdateRepository by lazy {
         UpdateRepository(

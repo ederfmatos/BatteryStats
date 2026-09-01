@@ -12,7 +12,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import dev.ederfmatos.batterystats.R
 import dev.ederfmatos.batterystats.domain.drain.HourlyDrain
 import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
 
@@ -39,8 +43,21 @@ fun LevelOverTimeChart(
     val endMs = ordered.last().timestampMs
     val spanMs = (endMs - startMs).coerceAtLeast(1L)
 
+    // Sem isto o Histórico é uma tela vazia para leitor de tela.
+    val description = stringResource(
+        R.string.chart_level_description,
+        ordered.first().levelPct,
+        ordered.last().levelPct,
+        (spanMs / 3_600_000L).toInt(),
+    )
+
     Box(modifier.fillMaxWidth().height(180.dp)) {
-        Canvas(Modifier.fillMaxWidth().height(180.dp)) {
+        Canvas(
+            Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .semantics { contentDescription = description }
+        ) {
             fun x(timestampMs: Long) = size.width * (timestampMs - startMs) / spanMs
             fun y(levelPct: Int) = size.height * (1f - levelPct.coerceIn(0, 100) / 100f)
 
@@ -109,8 +126,20 @@ fun HourlyDrainChart(
     val byHour = hourly.associateBy { it.hourOfDay }
     val maxMilliAmps = hourly.maxOf { it.averageMilliAmps }.coerceAtLeast(1.0)
 
+    val peak = hourly.maxByOrNull { it.averageMilliAmps }
+    val description = stringResource(
+        R.string.chart_hourly_description,
+        peak?.hourOfDay ?: 0,
+        (peak?.averageMilliAmps ?: 0.0).toInt(),
+    )
+
     Box(modifier.fillMaxWidth().height(160.dp)) {
-        Canvas(Modifier.fillMaxWidth().height(160.dp)) {
+        Canvas(
+            Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .semantics { contentDescription = description }
+        ) {
             val slotWidth = size.width / 24f
             val barWidth = slotWidth * 0.7f
 

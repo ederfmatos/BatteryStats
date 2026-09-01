@@ -13,6 +13,9 @@ import dev.ederfmatos.batterystats.domain.model.CurrentCalibration
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/** Como o app escolhe entre claro e escuro. */
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
 /** Intervalos de amostragem oferecidos. Mais curto custa mais bateria para medir bateria. */
 enum class SamplingInterval(val millis: Long) {
     THIRTY_SECONDS(30_000L),
@@ -39,6 +42,16 @@ data class AppSettings(
     val lastKnownForegroundPackage: String? = null,
     /** O usuário quer a amostragem ligada. O watchdog usa isto para decidir se deve ressuscitar. */
     val samplingEnabled: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    /**
+     * Material You. Ligado por padrão, mas desligável: sob cores dinâmicas os papéis de marca
+     * derivam do papel de parede e podem colidir entre si.
+     */
+    val dynamicColorEnabled: Boolean = true,
+    /** Última versão já anunciada por notificação, para não avisar a mesma todo dia. */
+    val lastNotifiedVersionCode: Long = 0L,
+    /** O usuário quer ser avisado de versão nova. */
+    val updateNotificationsEnabled: Boolean = true,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("settings")
@@ -67,7 +80,29 @@ class SettingsRepository(context: Context) {
             lastProcessedEventMs = prefs[KEY_LAST_EVENT_MS] ?: 0L,
             lastKnownForegroundPackage = prefs[KEY_LAST_FOREGROUND_PACKAGE],
             samplingEnabled = prefs[KEY_SAMPLING_ENABLED] ?: false,
+            themeMode = prefs[KEY_THEME_MODE]
+                ?.let { name -> runCatching { ThemeMode.valueOf(name) }.getOrNull() }
+                ?: ThemeMode.SYSTEM,
+            dynamicColorEnabled = prefs[KEY_DYNAMIC_COLOR] ?: true,
+            lastNotifiedVersionCode = prefs[KEY_LAST_NOTIFIED_VERSION] ?: 0L,
+            updateNotificationsEnabled = prefs[KEY_UPDATE_NOTIFICATIONS] ?: true,
         )
+    }
+
+    suspend fun setLastNotifiedVersionCode(versionCode: Long) {
+        store.edit { it[KEY_LAST_NOTIFIED_VERSION] = versionCode }
+    }
+
+    suspend fun setUpdateNotificationsEnabled(enabled: Boolean) {
+        store.edit { it[KEY_UPDATE_NOTIFICATIONS] = enabled }
+    }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        store.edit { it[KEY_THEME_MODE] = mode.name }
+    }
+
+    suspend fun setDynamicColorEnabled(enabled: Boolean) {
+        store.edit { it[KEY_DYNAMIC_COLOR] = enabled }
     }
 
     suspend fun setSamplingEnabled(enabled: Boolean) {
@@ -118,5 +153,9 @@ class SettingsRepository(context: Context) {
         val KEY_LAST_EVENT_MS = longPreferencesKey("last_processed_event_ms")
         val KEY_LAST_FOREGROUND_PACKAGE = stringPreferencesKey("last_foreground_package")
         val KEY_SAMPLING_ENABLED = booleanPreferencesKey("sampling_enabled")
+        val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
+        val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val KEY_LAST_NOTIFIED_VERSION = longPreferencesKey("last_notified_version_code")
+        val KEY_UPDATE_NOTIFICATIONS = booleanPreferencesKey("update_notifications")
     }
 }

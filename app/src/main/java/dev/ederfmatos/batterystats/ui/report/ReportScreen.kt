@@ -1,6 +1,5 @@
 package dev.ederfmatos.batterystats.ui.report
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,11 +11,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -71,12 +74,18 @@ fun ReportScreen(
                         Text(stringResource(R.string.report_regenerate))
                     }
                 }
-                TextButton(onClick = { onToggleAttachRaw(!state.attachRawJson) }) {
-                    Text(
-                        text = stringResource(R.string.report_attach_raw) +
-                            if (state.attachRawJson) " ✓" else "",
-                    )
-                }
+                // Switch em vez de TextButton com "✓" concatenado: o estado precisa existir para
+                // o leitor de tela, e o role certo vem de graça no Switch.
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.report_attach_raw_label)) },
+                    trailingContent = {
+                        Switch(
+                            checked = state.attachRawJson,
+                            onCheckedChange = onToggleAttachRaw,
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
                 if (state.markdown.isNotEmpty()) {
                     Text(
                         text = stringResource(R.string.report_size, state.markdown.length),
@@ -114,9 +123,9 @@ fun ReportScreen(
                     text = state.markdown,
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .horizontalScroll(rememberScrollState()),
+                    // Sem scroll horizontal: texto que rola na horizontal quebra o reflow e fica
+                    // ilegível com fonte grande. O relatório é prosa em Markdown, pode quebrar linha.
+                    modifier = Modifier.padding(16.dp),
                 )
             }
         }
