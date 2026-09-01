@@ -239,4 +239,18 @@
     <string name="recovery_export">Exportar o banco agora</string>
     <string name="recovery_open_releases">Abrir as releases anteriores</string>
     <string name="recovery_continue">Continuar mesmo assim</string>
+
+    <!-- Relatório (Fase 9) -->
+    <string name="tab_report">Relatório</string>
+    <string name="report_title">Relatório</string>
+    <string name="report_generating">Montando o relatório…</string>
+    <string name="report_share">Compartilhar relatório</string>
+    <string name="report_copy">Copiar</string>
+    <string name="report_copied">Relatório copiado.</string>
+    <string name="report_open_claude">Abrir no Claude</string>
+    <string name="report_attach_raw">Anexar o JSON cru</string>
+    <string name="report_truncated">O relatório era grande demais para o link; foi enviada a versão curta (cabeçalho, split de tela, top 5 apps e ressalvas).</string>
+    <string name="report_no_target">Nenhum app respondeu ao link. Use o botão de compartilhar.</string>
+    <string name="report_regenerate">Gerar de novo</string>
+    <string name="report_size">%1$d caracteres</string>
 </resources>

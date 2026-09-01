@@ -29,6 +29,8 @@ import dev.ederfmatos.batterystats.ui.history.HistoryScreen
 import dev.ederfmatos.batterystats.domain.update.InstallStep
 import dev.ederfmatos.batterystats.domain.update.UpdateManifest
 import dev.ederfmatos.batterystats.ui.home.HomeScreen
+import dev.ederfmatos.batterystats.ui.report.ReportScreen
+import dev.ederfmatos.batterystats.ui.report.ReportUiState
 import dev.ederfmatos.batterystats.ui.update.UpdateScreen
 import dev.ederfmatos.batterystats.ui.update.UpdateUiState
 import dev.ederfmatos.batterystats.ui.settings.SettingsScreen
@@ -41,6 +43,7 @@ private enum class Tab(
     APPS(R.string.tab_apps, R.drawable.ic_tab_apps),
     HISTORY(R.string.tab_history, R.drawable.ic_tab_history),
     COLLECTION(R.string.tab_collection, R.drawable.ic_tab_collection),
+    REPORT(R.string.tab_report, R.drawable.ic_tab_report),
     UPDATE(R.string.tab_update, R.drawable.ic_tab_update),
     DIAGNOSTICS(R.string.tab_diagnostics, R.drawable.ic_tab_diagnostics),
     SETTINGS(R.string.tab_settings, R.drawable.ic_tab_settings),
@@ -56,6 +59,12 @@ fun AppRoot(
     onRetryInstallAt: (UpdateManifest, InstallStep) -> Unit,
     onCancelUpdate: () -> Unit,
     onExportRequested: () -> Unit,
+    reportState: ReportUiState,
+    onGenerateReport: () -> Unit,
+    onShareReport: () -> Unit,
+    onCopyReport: () -> Unit,
+    onOpenReportInClaude: () -> Unit,
+    onToggleAttachRaw: (Boolean) -> Unit,
     onStartSampling: () -> Unit,
     onStopSampling: () -> Unit,
     onRefresh: () -> Unit,
@@ -110,6 +119,16 @@ fun AppRoot(
             Tab.HISTORY -> HistoryScreen(state = state, modifier = contentModifier)
 
             Tab.COLLECTION -> CollectionHealthScreen(state = state, modifier = contentModifier)
+
+            Tab.REPORT -> ReportScreen(
+                state = reportState,
+                onGenerate = onGenerateReport,
+                onShare = onShareReport,
+                onCopy = onCopyReport,
+                onOpenInClaude = onOpenReportInClaude,
+                onToggleAttachRaw = onToggleAttachRaw,
+                modifier = contentModifier,
+            )
 
             Tab.UPDATE -> UpdateScreen(
                 state = updateState,

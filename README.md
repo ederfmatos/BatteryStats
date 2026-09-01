@@ -132,6 +132,24 @@ instale.
 4. Deixe rodando algumas horas. A calibração automática e as médias precisam de dados; a estimativa
    de saúde precisa de pelo menos 7 dias.
 
+## Relatório
+
+A aba **Relatório** monta um resumo em Markdown de 1 a 3 KB com tudo já agregado: cobertura real,
+degrau de quantização e a incerteza que ele impõe, split de tela ligada/desligada, dreno por hora
+do dia, top 10 apps e o bucket de sistema, mais as médias de brilho, rede e localização.
+
+No fim vem um bloco de **ressalvas geradas automaticamente** — cobertura abaixo de 70%, excesso de
+janelas de baixa confiança, degrau grosseiro, permissão de uso ausente. Quem analisar precisa saber
+onde o dado é fraco antes de concluir.
+
+Dois botões:
+
+- **Compartilhar** — share sheet do Android, com o Markdown em `EXTRA_TEXT` e opcionalmente o JSON
+  cru anexado. Funciona com qualquer app instalado.
+- **Abrir no Claude** — monta `https://claude.ai/new?q=<relatório>`. É secundário de propósito:
+  nada na documentação garante que o app do Claude capture essa URL no Android, então ela pode
+  abrir no navegador. Se o relatório não couber no link, o app envia a versão curta e avisa na tela.
+
 ## Retenção de dados
 
 Amostras cruas ficam **14 dias**; os resumos diários ficam **para sempre**. A limpeza roda uma vez

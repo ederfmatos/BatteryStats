@@ -23,6 +23,7 @@ import dev.ederfmatos.batterystats.domain.update.InstallStep
 import dev.ederfmatos.batterystats.domain.update.UpdateManifest
 import dev.ederfmatos.batterystats.ui.AppRoot
 import dev.ederfmatos.batterystats.ui.MainViewModel
+import dev.ederfmatos.batterystats.ui.report.ReportViewModel
 import dev.ederfmatos.batterystats.ui.theme.BatteryStatsTheme
 import dev.ederfmatos.batterystats.ui.update.RecoveryScreen
 import dev.ederfmatos.batterystats.ui.update.UpdateViewModel
@@ -68,8 +69,12 @@ class MainActivity : ComponentActivity() {
                 val updateViewModel: UpdateViewModel = viewModel(
                     factory = UpdateViewModel.Factory(application)
                 )
+                val reportViewModel: ReportViewModel = viewModel(
+                    factory = ReportViewModel.Factory(application)
+                )
                 val state by viewModel.uiState.collectAsStateWithLifecycle()
                 val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
+                val reportState by reportViewModel.uiState.collectAsStateWithLifecycle()
 
                 AppRoot(
                     state = state,
@@ -79,6 +84,23 @@ class MainActivity : ComponentActivity() {
                     onRetryInstallAt = ::onRetryInstallAt,
                     onCancelUpdate = updateViewModel::cancel,
                     onExportRequested = { createDocument.launch("batterystats.json") },
+                    reportState = reportState,
+                    onGenerateReport = reportViewModel::generate,
+                    onShareReport = { reportViewModel.shareIntent(::startActivitySafely) },
+                    onCopyReport = {
+                        reportViewModel.copy()
+                        Toast.makeText(this, R.string.report_copied, Toast.LENGTH_SHORT).show()
+                    },
+                    onOpenReportInClaude = {
+                        val intent = reportViewModel.claudeIntent()
+                        if (intent == null) {
+                            Toast.makeText(this, R.string.report_no_target, Toast.LENGTH_SHORT)
+                                .show()
+                        } else {
+                            startActivitySafely(intent)
+                        }
+                    },
+                    onToggleAttachRaw = reportViewModel::setAttachRawJson,
                     onStartSampling = viewModel::startSampling,
                     onStopSampling = viewModel::stopSampling,
                     onRefresh = viewModel::refresh,
