@@ -37,6 +37,8 @@ data class AppSettings(
     val lastProcessedEventMs: Long = 0L,
     /** Último app visto em primeiro plano; sobrevive a reinícios do serviço. */
     val lastKnownForegroundPackage: String? = null,
+    /** O usuário quer a amostragem ligada. O watchdog usa isto para decidir se deve ressuscitar. */
+    val samplingEnabled: Boolean = false,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("settings")
@@ -64,7 +66,12 @@ class SettingsRepository(context: Context) {
             quantizationStepUah = prefs[KEY_QUANTIZATION_STEP_UAH] ?: 0L,
             lastProcessedEventMs = prefs[KEY_LAST_EVENT_MS] ?: 0L,
             lastKnownForegroundPackage = prefs[KEY_LAST_FOREGROUND_PACKAGE],
+            samplingEnabled = prefs[KEY_SAMPLING_ENABLED] ?: false,
         )
+    }
+
+    suspend fun setSamplingEnabled(enabled: Boolean) {
+        store.edit { it[KEY_SAMPLING_ENABLED] = enabled }
     }
 
     suspend fun setQuantizationStepUah(stepUah: Long) {
@@ -110,5 +117,6 @@ class SettingsRepository(context: Context) {
         val KEY_QUANTIZATION_STEP_UAH = longPreferencesKey("quantization_step_uah")
         val KEY_LAST_EVENT_MS = longPreferencesKey("last_processed_event_ms")
         val KEY_LAST_FOREGROUND_PACKAGE = stringPreferencesKey("last_foreground_package")
+        val KEY_SAMPLING_ENABLED = booleanPreferencesKey("sampling_enabled")
     }
 }

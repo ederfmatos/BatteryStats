@@ -24,6 +24,7 @@ import dev.ederfmatos.batterystats.data.StatsPeriod
 import dev.ederfmatos.batterystats.data.prefs.SamplingInterval
 import dev.ederfmatos.batterystats.ui.apps.AppsScreen
 import dev.ederfmatos.batterystats.ui.diagnostics.DiagnosticsScreen
+import dev.ederfmatos.batterystats.ui.health.CollectionHealthScreen
 import dev.ederfmatos.batterystats.ui.history.HistoryScreen
 import dev.ederfmatos.batterystats.ui.home.HomeScreen
 import dev.ederfmatos.batterystats.ui.settings.SettingsScreen
@@ -35,6 +36,7 @@ private enum class Tab(
     NOW(R.string.tab_now, R.drawable.ic_tab_now),
     APPS(R.string.tab_apps, R.drawable.ic_tab_apps),
     HISTORY(R.string.tab_history, R.drawable.ic_tab_history),
+    COLLECTION(R.string.tab_collection, R.drawable.ic_tab_collection),
     DIAGNOSTICS(R.string.tab_diagnostics, R.drawable.ic_tab_diagnostics),
     SETTINGS(R.string.tab_settings, R.drawable.ic_tab_settings),
 }
@@ -95,6 +97,8 @@ fun AppRoot(
             )
 
             Tab.HISTORY -> HistoryScreen(state = state, modifier = contentModifier)
+
+            Tab.COLLECTION -> CollectionHealthScreen(state = state, modifier = contentModifier)
 
             Tab.DIAGNOSTICS -> DiagnosticsScreen(
                 state = state,

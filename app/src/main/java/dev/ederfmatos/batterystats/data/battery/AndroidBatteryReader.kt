@@ -29,7 +29,13 @@ class AndroidBatteryReader(
     private val powerManager: PowerManager? =
         context.getSystemService(Context.POWER_SERVICE) as? PowerManager
 
-    override fun read(): BatterySnapshot? {
+    override fun read(): BatterySnapshot? = read(currentNowSamples = emptyList())
+
+    /**
+     * [currentNowSamples] vem do amostrador, que tira várias leituras espaçadas em vez de uma só.
+     * Quando a lista está vazia — leitura ao vivo da tela — usa-se uma leitura direta.
+     */
+    fun read(currentNowSamples: List<Long>): BatterySnapshot? {
         val intent = readStickyBatteryIntent() ?: run {
             Log.w(TAG, "ACTION_BATTERY_CHANGED sticky indisponível; leitura descartada")
             return null
@@ -46,7 +52,9 @@ class AndroidBatteryReader(
             timestampMs = clock(),
             levelPct = levelPct,
             chargeCounterUah = longProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER),
-            currentNowRaw = intProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW),
+            currentNowRaw = currentNowSamples.medianOrNull()
+                ?: intProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW),
+            currentNowSamples = currentNowSamples,
             temperatureDeciC = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Int.MIN_VALUE)
                 .takeIf { it != Int.MIN_VALUE },
             voltageMv = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, Int.MIN_VALUE)
@@ -85,6 +93,20 @@ class AndroidBatteryReader(
     }
 
     private fun isScreenOn(): Boolean = powerManager?.isInteractive ?: false
+
+    /** Uma leitura crua de CURRENT_NOW, sem calibração e sem mediana. */
+    fun readCurrentNowRaw(): Long? = intProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+
+    private fun List<Long>.medianOrNull(): Long? {
+        if (isEmpty()) return null
+        val ordered = sorted()
+        val middle = ordered.size / 2
+        return if (ordered.size % 2 == 1) {
+            ordered[middle]
+        } else {
+            (ordered[middle - 1] + ordered[middle]) / 2
+        }
+    }
 
     private fun Int.toBatteryStatus(): BatteryStatus = when (this) {
         BatteryManager.BATTERY_STATUS_CHARGING -> BatteryStatus.CHARGING

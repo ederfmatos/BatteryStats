@@ -60,7 +60,12 @@ class SamplingService : Service() {
 
         val container = application.appContainer
         container.screenStateTracker.onScreenChanged = { screenOn ->
-            if (!screenOn) container.foregroundAppResolver.onScreenOff()
+            if (screenOn) {
+                container.interactiveTimeCounter.onScreenOn()
+            } else {
+                container.interactiveTimeCounter.onScreenOff()
+                container.foregroundAppResolver.onScreenOff()
+            }
             immediateSampleRequests.trySend(Unit)
         }
         container.screenStateTracker.start()
@@ -69,6 +74,9 @@ class SamplingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
+            val container = application.appContainer
+            container.samplingWatchdog.cancel()
+            scope.launch { container.settingsRepository.setSamplingEnabled(false) }
             stopSelf()
             return START_NOT_STICKY
         }
@@ -107,10 +115,16 @@ class SamplingService : Service() {
             lastPackage = settings.lastKnownForegroundPackage,
         )
 
+        container.settingsRepository.setSamplingEnabled(true)
+        if (container.screenStateTracker.isScreenOn) container.interactiveTimeCounter.onScreenOn()
+
         var afterGap = recordStartupGap(settings.samplingInterval.millis)
 
         while (scope.isActive) {
             val current = container.settingsRepository.settings.first()
+            // Reagendado a cada amostra: se a próxima acontecer, o alarme é substituído e nunca
+            // dispara; se o serviço morrer, ele é o que traz a amostragem de volta.
+            container.samplingWatchdog.schedule(current.samplingInterval.millis)
             sampleOnce(dao, afterGap)
             afterGap = false
 
@@ -161,10 +175,23 @@ class SamplingService : Service() {
             afterGap = afterGap,
         )
 
-        val snapshot = container.batteryReader.read()?.copy(
+        // Espera o pico de acordar passar e tira a mediana de várias leituras: uma leitura única
+        // mede junto o custo da própria amostragem.
+        val currentNowSamples = container.currentNowSampler.sample()
+        val device = container.deviceStateReader
+
+        val snapshot = container.androidBatteryReader.read(currentNowSamples)?.copy(
             screenOn = screenOn,
             foregroundPackage = foreground.packageName,
             foregroundReason = foreground.reason,
+            screenBrightness = device.screenBrightness(),
+            autoBrightness = device.isAutoBrightness(),
+            networkType = device.networkType(),
+            networkMetered = device.isNetworkMetered(),
+            locationEnabled = device.isLocationEnabled(),
+            powerSaveMode = device.isPowerSaveMode(),
+            deviceIdleMode = device.isDeviceIdleMode(),
+            interactiveMsToday = container.interactiveTimeCounter.totalTodayMs(),
         )
 
         if (snapshot == null) {
@@ -228,6 +255,10 @@ class SamplingService : Service() {
             }
         }
 
+        /**
+         * Parada pedida pelo usuário: desliga o watchdog também, senão o alarme religaria o
+         * serviço logo em seguida.
+         */
         fun stop(context: Context) {
             context.startService(
                 Intent(context, SamplingService::class.java).setAction(ACTION_STOP)

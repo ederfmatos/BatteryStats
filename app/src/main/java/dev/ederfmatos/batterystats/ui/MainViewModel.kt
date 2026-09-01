@@ -38,6 +38,8 @@ data class MainUiState(
     val history: List<BatterySnapshot> = emptyList(),
     val sampleCount: Int = 0,
     val health: BatteryHealthEstimate? = null,
+    val serviceKillCount: Int = 0,
+    val canScheduleExactAlarms: Boolean = true,
     val loading: Boolean = true,
 ) {
     val currentMilliAmps: Double?
@@ -100,6 +102,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val health = runCatching { container.statsRepository.healthEstimate() }
                 .onFailure { Log.e(TAG, "Falha ao estimar a saúde da bateria", it) }
                 .getOrNull()
+            val serviceKills = runCatching { container.statsRepository.serviceKillCount() }
+                .onFailure { Log.e(TAG, "Falha ao contar mortes do serviço", it) }
+                .getOrDefault(0)
 
             _uiState.value = _uiState.value.copy(
                 periodStats = stats,
@@ -107,6 +112,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 appRanking = ranking,
                 history = history,
                 health = health,
+                serviceKillCount = serviceKills,
+                canScheduleExactAlarms = container.samplingWatchdog.canScheduleExact(),
                 hasUsageAccess = container.foregroundAppResolver.hasAccess(),
                 ignoringBatteryOptimizations = isIgnoringBatteryOptimizations(),
                 loading = false,

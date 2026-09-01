@@ -165,4 +165,18 @@
     <string name="fg_reason_no_permission">sem permissão de uso</string>
     <string name="fg_reason_gap">buraco de medição</string>
     <string name="fg_reason_screen_off">tela desligada</string>
+
+    <!-- Saúde da coleta (7.3) -->
+    <string name="tab_collection">Coleta</string>
+    <string name="health_collection_title">Saúde da coleta</string>
+    <string name="health_collection_no_data">Sem dados de cobertura ainda.</string>
+    <string name="health_collection_gaps">Buracos</string>
+    <string name="health_collection_service_deaths">Mortes do serviço (24h)</string>
+    <string name="health_collection_poor_title">Cobertura abaixo de 70%</string>
+    <string name="health_collection_samsung_steps">O sistema está matando o app. Em Samsung: Ajustes → Bateria → Limites de uso em segundo plano → Apps que nunca entram em suspensão → adicione o BatteryStats. Sem isso, os agregados descrevem só o tempo em que o app estava vivo.</string>
+    <string name="health_collection_actions">Ações</string>
+    <string name="health_collection_open_battery_settings">Abrir otimização de bateria</string>
+    <string name="health_collection_exact_alarm_rationale">O alarme exato é o que ressuscita o serviço quando o sistema o derruba. Sem ele, o app só volta quando você abrir.</string>
+    <string name="health_collection_exact_alarm_action">Permitir alarmes exatos</string>
+    <string name="home_coverage_banner">Cobertura de %1$d%% nas últimas 24h. Veja a aba Coleta para corrigir.</string>
 </resources>

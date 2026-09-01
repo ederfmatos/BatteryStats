@@ -15,6 +15,7 @@ import dev.ederfmatos.batterystats.domain.drain.CurrentCalibrator
 import dev.ederfmatos.batterystats.domain.drain.DrainAggregator
 import dev.ederfmatos.batterystats.domain.drain.DrainAnalysis
 import dev.ederfmatos.batterystats.domain.drain.DrainStats
+import dev.ederfmatos.batterystats.domain.drain.GapReason
 import dev.ederfmatos.batterystats.domain.drain.MeasurementGap
 import dev.ederfmatos.batterystats.domain.drain.QuantizationDetector
 import dev.ederfmatos.batterystats.domain.drain.RuntimeProjection
@@ -92,6 +93,12 @@ class StatsRepository(
             calibration = calibration,
             coverage = coverageCalculator.coverage(fromMs, nowMs, gaps),
         )
+    }
+
+    /** Quantas vezes o sistema derrubou o serviço nas últimas 24h. */
+    suspend fun serviceKillCount(): Int = withContext(Dispatchers.IO) {
+        dao.gapsSince(clock() - MILLIS_PER_DAY)
+            .count { it.reason == GapReason.SERVICE_KILLED.name }
     }
 
     suspend fun coverage(period: StatsPeriod): Coverage = withContext(Dispatchers.Default) {

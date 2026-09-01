@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DailyAggregateEntity::class,
         MeasurementGapEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class BatteryDatabase : RoomDatabase() {
@@ -46,12 +46,35 @@ abstract class BatteryDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 2 → 3: leituras cruas de CURRENT_NOW e o contexto que explica o dreno (brilho, rede,
+         * localização, economia de energia, Doze, tempo de tela no dia).
+         *
+         * Todas as colunas entram nulas nas linhas antigas — e isso é correto: não há como inventar
+         * retroativamente o brilho de uma amostra de duas semanas atrás.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE battery_sample ADD COLUMN currentNowSamples TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE battery_sample ADD COLUMN screenBrightness INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE battery_sample ADD COLUMN autoBrightness INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE battery_sample ADD COLUMN networkType TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE battery_sample ADD COLUMN networkMetered INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE battery_sample ADD COLUMN locationEnabled INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE battery_sample ADD COLUMN powerSaveMode INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE battery_sample ADD COLUMN deviceIdleMode INTEGER DEFAULT NULL")
+                db.execSQL(
+                    "ALTER TABLE battery_sample ADD COLUMN interactiveMsToday INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
         fun build(context: Context): BatteryDatabase = Room.databaseBuilder(
             context.applicationContext,
             BatteryDatabase::class.java,
             "batterystats.db",
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
     }
 }

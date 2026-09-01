@@ -6,6 +6,9 @@ enum class BatteryStatus { CHARGING, DISCHARGING, FULL, NOT_CHARGING, UNKNOWN }
 /** Fonte de energia conectada. */
 enum class PlugType { NONE, AC, USB, WIRELESS, DOCK, UNKNOWN }
 
+/** Transporte de rede ativo. Um dos maiores multiplicadores de dreno depois da tela. */
+enum class NetworkType { WIFI, CELLULAR, OTHER, NONE, UNKNOWN }
+
 /**
  * Uma leitura instantânea da bateria.
  *
@@ -27,6 +30,24 @@ data class BatterySnapshot(
     val foregroundPackage: String? = null,
     /** Por que [foregroundPackage] é null. Null aqui significa que há um pacote resolvido. */
     val foregroundReason: ForegroundReason? = null,
+
+    /**
+     * As leituras cruas de CURRENT_NOW que geraram [currentNowRaw], que é a mediana delas.
+     * Guardadas para auditar a dispersão: uma leitura única sai enviesada porque acontece no
+     * instante em que o app acorda o aparelho e acaba medindo o próprio custo da amostragem.
+     */
+    val currentNowSamples: List<Long> = emptyList(),
+
+    /** Brilho da tela, 0–255 conforme Settings.System.SCREEN_BRIGHTNESS. */
+    val screenBrightness: Int? = null,
+    val autoBrightness: Boolean? = null,
+    val networkType: NetworkType = NetworkType.UNKNOWN,
+    val networkMetered: Boolean? = null,
+    val locationEnabled: Boolean? = null,
+    val powerSaveMode: Boolean? = null,
+    val deviceIdleMode: Boolean? = null,
+    /** Tempo acumulado de tela ligada no dia local desta amostra. */
+    val interactiveMsToday: Long = 0L,
 ) {
     val temperatureCelsius: Double? get() = temperatureDeciC?.let { it / 10.0 }
     val voltageVolts: Double? get() = voltageMv?.let { it / 1000.0 }

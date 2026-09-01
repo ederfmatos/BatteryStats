@@ -63,6 +63,8 @@ fun HomeScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        CoverageBanner(state)
+
         val snapshot = state.snapshot
         if (snapshot == null) {
             UnavailableCard()
@@ -93,6 +95,35 @@ fun HomeScreen(
                     )
                     batteryOptimizationLauncher.launch(intent)
                 },
+            )
+        }
+    }
+}
+
+/**
+ * Banner persistente de cobertura baixa. Fica no topo da home de propósito: com 59% do tempo em
+ * buracos, todo número abaixo dele descreve outra coisa que não o dia do usuário.
+ */
+@Composable
+private fun CoverageBanner(state: MainUiState) {
+    val coverage = state.periodStats?.coverage ?: return
+    if (!coverage.isPoor) return
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+        ),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = stringResource(R.string.home_coverage_banner, coverage.percent.toInt()),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Text(
+                text = stringResource(R.string.health_collection_samsung_steps),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
             )
         }
     }

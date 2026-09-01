@@ -25,6 +25,16 @@
     <!-- Pedir isenção da otimização de bateria; sem ela o app morre justamente enquanto mede. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!--
+      Watchdog que ressuscita o serviço quando o sistema o derruba.
+      USE_EXACT_ALARM (API 33+) é concedida automaticamente; SCHEDULE_EXACT_ALARM (API 31–32) é
+      concedida por padrão mas revogável, e é pedida na tela de Saúde da coleta quando falta.
+    -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+
     <!-- Timeline de app em primeiro plano. Concedida na tela de Configurações, não em runtime. -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
@@ -66,5 +76,9 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".data.receiver.SamplingWatchdogReceiver"
+            android:exported="false" />
     </application>
 </manifest>

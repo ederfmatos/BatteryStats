@@ -5,6 +5,10 @@ import dev.ederfmatos.batterystats.data.StatsRepository
 import dev.ederfmatos.batterystats.data.battery.AndroidBatteryReader
 import dev.ederfmatos.batterystats.data.battery.BatteryReader
 import dev.ederfmatos.batterystats.data.battery.BatteryStateSource
+import dev.ederfmatos.batterystats.data.battery.CurrentNowSampler
+import dev.ederfmatos.batterystats.data.battery.DeviceStateReader
+import dev.ederfmatos.batterystats.data.sampling.InteractiveTimeCounter
+import dev.ederfmatos.batterystats.data.sampling.SamplingWatchdog
 import dev.ederfmatos.batterystats.data.db.BatteryDatabase
 import dev.ederfmatos.batterystats.data.prefs.SettingsRepository
 import dev.ederfmatos.batterystats.data.receiver.ScreenStateTracker
@@ -18,7 +22,17 @@ import dev.ederfmatos.batterystats.data.usage.ForegroundAppResolver
 class AppContainer(context: Context) {
     private val appContext: Context = context.applicationContext
 
-    val batteryReader: BatteryReader by lazy { AndroidBatteryReader(appContext) }
+    val androidBatteryReader: AndroidBatteryReader by lazy { AndroidBatteryReader(appContext) }
+
+    val batteryReader: BatteryReader get() = androidBatteryReader
+
+    val currentNowSampler: CurrentNowSampler by lazy { CurrentNowSampler(androidBatteryReader) }
+
+    val deviceStateReader: DeviceStateReader by lazy { DeviceStateReader(appContext) }
+
+    val interactiveTimeCounter: InteractiveTimeCounter by lazy { InteractiveTimeCounter() }
+
+    val samplingWatchdog: SamplingWatchdog by lazy { SamplingWatchdog(appContext) }
 
     val batteryStateSource: BatteryStateSource by lazy {
         BatteryStateSource(appContext, batteryReader)

@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
 import dev.ederfmatos.batterystats.domain.model.BatteryStatus
 import dev.ederfmatos.batterystats.domain.model.ForegroundReason
+import dev.ederfmatos.batterystats.domain.model.NetworkType
 import dev.ederfmatos.batterystats.domain.model.PlugType
 
 @Entity(
@@ -27,6 +28,18 @@ data class BatterySampleEntity(
     @ColumnInfo(name = "foregroundPackage") val foregroundPackage: String?,
     /** Nome de [ForegroundReason], ou null quando há um pacote resolvido. Ver migração 1 → 2. */
     @ColumnInfo(name = "foregroundReason") val foregroundReason: String? = null,
+
+    // Campos da migração 2 → 3. Ver DeviceStateReader para de onde cada um vem.
+    /** Leituras cruas de CURRENT_NOW separadas por vírgula; [currentNowRaw] é a mediana delas. */
+    @ColumnInfo(name = "currentNowSamples") val currentNowSamples: String? = null,
+    @ColumnInfo(name = "screenBrightness") val screenBrightness: Int? = null,
+    @ColumnInfo(name = "autoBrightness") val autoBrightness: Boolean? = null,
+    @ColumnInfo(name = "networkType") val networkType: String? = null,
+    @ColumnInfo(name = "networkMetered") val networkMetered: Boolean? = null,
+    @ColumnInfo(name = "locationEnabled") val locationEnabled: Boolean? = null,
+    @ColumnInfo(name = "powerSaveMode") val powerSaveMode: Boolean? = null,
+    @ColumnInfo(name = "deviceIdleMode") val deviceIdleMode: Boolean? = null,
+    @ColumnInfo(name = "interactiveMsToday") val interactiveMsToday: Long = 0L,
 )
 
 fun BatterySnapshot.toEntity(): BatterySampleEntity = BatterySampleEntity(
@@ -41,6 +54,15 @@ fun BatterySnapshot.toEntity(): BatterySampleEntity = BatterySampleEntity(
     screenOn = screenOn,
     foregroundPackage = foregroundPackage,
     foregroundReason = foregroundReason?.name,
+    currentNowSamples = currentNowSamples.takeIf { it.isNotEmpty() }?.joinToString(","),
+    screenBrightness = screenBrightness,
+    autoBrightness = autoBrightness,
+    networkType = networkType.name,
+    networkMetered = networkMetered,
+    locationEnabled = locationEnabled,
+    powerSaveMode = powerSaveMode,
+    deviceIdleMode = deviceIdleMode,
+    interactiveMsToday = interactiveMsToday,
 )
 
 fun BatterySampleEntity.toSnapshot(): BatterySnapshot = BatterySnapshot(
@@ -56,4 +78,18 @@ fun BatterySampleEntity.toSnapshot(): BatterySnapshot = BatterySnapshot(
     foregroundPackage = foregroundPackage,
     foregroundReason = foregroundReason
         ?.let { name -> runCatching { ForegroundReason.valueOf(name) }.getOrNull() },
+    currentNowSamples = currentNowSamples
+        ?.split(',')
+        ?.mapNotNull { it.trim().toLongOrNull() }
+        .orEmpty(),
+    screenBrightness = screenBrightness,
+    autoBrightness = autoBrightness,
+    networkType = networkType
+        ?.let { name -> runCatching { NetworkType.valueOf(name) }.getOrNull() }
+        ?: NetworkType.UNKNOWN,
+    networkMetered = networkMetered,
+    locationEnabled = locationEnabled,
+    powerSaveMode = powerSaveMode,
+    deviceIdleMode = deviceIdleMode,
+    interactiveMsToday = interactiveMsToday,
 )
