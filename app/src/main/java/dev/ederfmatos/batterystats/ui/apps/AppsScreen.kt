@@ -1,6 +1,7 @@
 package dev.ederfmatos.batterystats.ui.apps
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,11 +9,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -24,9 +26,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
@@ -109,12 +113,14 @@ fun AppsScreen(
                 )
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(ranking, key = { it.packageName }) { usage -> AppRow(usage) }
+            // Uma Surface com divisores, não um Card por app: doze superfícies elevadas empilhadas
+            // não criam hierarquia nenhuma, só ruído.
+            val maxMah = ranking.maxOf { it.estimatedMilliAmpHours }
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(ranking, key = { it.packageName }) { usage ->
+                    AppRow(usage, maxMah)
+                    HorizontalDivider()
+                }
             }
         }
 
@@ -132,7 +138,7 @@ fun AppsScreen(
 }
 
 @Composable
-private fun AppRow(usage: AppEnergyUsage) {
+private fun AppRow(usage: AppEnergyUsage, maxMilliAmpHours: Double) {
     val context = LocalContext.current
     val container = remember(context) { appContainerFromContext(context) }
     val label = if (usage.isSystemBucket) {
@@ -152,18 +158,21 @@ private fun AppRow(usage: AppEnergyUsage) {
         }
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = if (usage.isSystemBucket) {
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        } else {
-            CardDefaults.cardColors()
-        },
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (usage.isSystemBucket) {
+                    MaterialTheme.colorScheme.surfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.surface
+                }
+            ),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -174,23 +183,24 @@ private fun AppRow(usage: AppEnergyUsage) {
                     modifier = Modifier.size(40.dp),
                 )
             } else {
-                Box(Modifier.size(40.dp))
+                // O bucket de sistema tem ícone próprio: um buraco anônimo de 40dp fazia ele
+                // parecer um app cujo ícone não carregou.
+                Icon(
+                    painter = painterResource(R.drawable.ic_tab_settings),
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Column(Modifier.weight(1f)) {
                 Text(text = label, style = MaterialTheme.typography.titleSmall)
                 if (!usage.isSystemBucket) {
                     Text(
                         text = stringResource(
-                            R.string.apps_foreground_time,
+                            R.string.apps_supporting,
                             formatDuration(usage.foregroundMs),
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.apps_avg_ma,
                             usage.averageMilliAmpsInForeground,
+                            usage.windowCount,
                         ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -202,8 +212,27 @@ private fun AppRow(usage: AppEnergyUsage) {
             Text(
                 text = stringResource(R.string.apps_mah_estimated, usage.estimatedMilliAmpHours),
                 style = MaterialTheme.typography.titleMedium,
+                // Pouca evidência não vira número escondido, vira número apagado.
+                color = if (usage.hasThinEvidence) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
             )
         }
+
+        // Um ranking sem magnitude visual obriga a fazer aritmética para saber que o primeiro
+        // gasta quatro vezes o segundo.
+        LinearProgressIndicator(
+            progress = {
+                (usage.estimatedMilliAmpHours / maxMilliAmpHours).coerceIn(0.0, 1.0).toFloat()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp),
+            trackColor = Color.Transparent,
+            drawStopIndicator = {},
+        )
     }
 }
 

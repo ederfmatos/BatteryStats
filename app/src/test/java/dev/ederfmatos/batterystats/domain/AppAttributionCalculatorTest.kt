@@ -7,6 +7,7 @@ import dev.ederfmatos.batterystats.domain.drain.DrainSource
 import dev.ederfmatos.batterystats.domain.drain.DrainWindow
 import dev.ederfmatos.batterystats.domain.drain.ScreenRegime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -116,5 +117,45 @@ class AppAttributionCalculatorTest {
             result.map { it.estimatedMilliAmpHours } ==
                 result.map { it.estimatedMilliAmpHours }.sortedDescending()
         )
+    }
+
+    @Test
+    fun `conta quantas janelas sustentam cada linha do ranking`() {
+        // Uma linha apurada em 1 janela não pode parecer idêntica a uma apurada em 4.
+        val windows = (0 until 4).map { index ->
+            window(BASE_MS + index * 60 * MINUTE_MS, 60 * MINUTE_MS, 300.0, ScreenRegime.ON)
+        }
+        val intervals = listOf(
+            ForegroundInterval("app.constante", BASE_MS, BASE_MS + 4 * 60 * MINUTE_MS),
+            ForegroundInterval("app.pontual", BASE_MS, BASE_MS + 30 * MINUTE_MS),
+        )
+
+        val result = calculator.attribute(windows, intervals, idleBaselineMilliAmps = null)
+
+        assertEquals(4, result.first { it.packageName == "app.constante" }.windowCount)
+        assertEquals(1, result.first { it.packageName == "app.pontual" }.windowCount)
+    }
+
+    @Test
+    fun `evidencia magra e sinalizada`() {
+        val windows = listOf(window(BASE_MS, 60 * MINUTE_MS, 300.0, ScreenRegime.ON))
+        val intervals = listOf(
+            ForegroundInterval("app.unico", BASE_MS, BASE_MS + 60 * MINUTE_MS),
+        )
+
+        val usage = calculator.attribute(windows, intervals, null)
+            .first { it.packageName == "app.unico" }
+
+        assertTrue(usage.hasThinEvidence)
+    }
+
+    @Test
+    fun `bucket de sistema nunca e marcado como evidencia magra`() {
+        // Ele agrega tudo que não deu para atribuir; "pouca evidência" não se aplica a ele.
+        val windows = listOf(window(BASE_MS, 60 * MINUTE_MS, 100.0, ScreenRegime.OFF))
+
+        val system = calculator.attribute(windows, emptyList(), null).first { it.isSystemBucket }
+
+        assertFalse(system.hasThinEvidence)
     }
 }

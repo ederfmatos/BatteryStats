@@ -23,7 +23,22 @@ data class AppEnergyUsage(
     val foregroundMs: Long,
     val averageMilliAmpsInForeground: Double,
     val isSystemBucket: Boolean = false,
-)
+    /**
+     * Sobre quantas janelas de medição esta linha foi construída.
+     *
+     * Janelas de baixa confiança já são descartadas na atribuição, então o que resta de incerteza
+     * aqui é **quantidade de evidência** — e uma linha apurada em 2 janelas não pode parecer
+     * idêntica a uma apurada em 40.
+     */
+    val windowCount: Int = 0,
+) {
+    /** Abaixo disso a linha é sugestiva, não conclusiva. */
+    val hasThinEvidence: Boolean get() = !isSystemBucket && windowCount < MIN_WINDOWS_FOR_CONFIDENCE
+
+    companion object {
+        const val MIN_WINDOWS_FOR_CONFIDENCE = 3
+    }
+}
 
 /**
  * Tudo que não dá para creditar a um app específico: tela desligada, janelas sem timeline de

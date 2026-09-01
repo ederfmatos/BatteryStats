@@ -30,7 +30,9 @@ class AppAttributionCalculator {
     ): List<AppEnergyUsage> {
         val mahByPackage = mutableMapOf<String, Double>()
         val foregroundMsByPackage = mutableMapOf<String, Long>()
+        val windowsByPackage = mutableMapOf<String, Int>()
         var systemMah = 0.0
+        var systemWindows = 0
 
         val baseline = (idleBaselineMilliAmps ?: 0.0).coerceAtLeast(0.0)
 
@@ -41,6 +43,7 @@ class AppAttributionCalculator {
 
             if (window.screen != ScreenRegime.ON) {
                 systemMah += windowMah
+                systemWindows++
                 continue
             }
 
@@ -71,6 +74,7 @@ class AppAttributionCalculator {
                 val share = overlapMs.toDouble() / window.durationMs
                 mahByPackage.merge(packageName, attributableMah * share, Double::plus)
                 foregroundMsByPackage.merge(packageName, overlapMs, Long::plus)
+                windowsByPackage.merge(packageName, 1, Int::plus)
             }
         }
 
@@ -82,6 +86,7 @@ class AppAttributionCalculator {
                 estimatedMilliAmpHours = mah,
                 foregroundMs = foregroundMs,
                 averageMilliAmpsInForeground = if (hours > 0) mah / hours else 0.0,
+                windowCount = windowsByPackage[packageName] ?: 0,
             )
         }
 
@@ -91,6 +96,7 @@ class AppAttributionCalculator {
             foregroundMs = 0L,
             averageMilliAmpsInForeground = 0.0,
             isSystemBucket = true,
+            windowCount = systemWindows,
         )
 
         return (apps + system).sortedByDescending { it.estimatedMilliAmpHours }

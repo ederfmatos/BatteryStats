@@ -10,6 +10,7 @@
     <string name="home_temperature">Temperatura</string>
     <string name="home_voltage">Voltagem</string>
     <string name="home_current">Corrente instantânea</string>
+    <string name="home_current_instant">Corrente (instantânea)</string>
     <string name="home_charge_counter">Contador de carga</string>
     <string name="home_screen">Tela</string>
     <string name="home_reading_unavailable">Sem leitura da bateria</string>
@@ -87,6 +88,7 @@
     <string name="apps_mah">%1$.1f mAh</string>
     <string name="apps_mah_estimated">≈ %1$.1f mAh</string>
     <string name="apps_avg_ma">%1$.0f mA em foreground</string>
+    <string name="apps_supporting">%1$s em 1º plano · %2$.0f mA · %3$d janelas</string>
     <string name="apps_disclaimer">≈ estimativa por correlação, não medição por app</string>
     <string name="apps_degraded">Sem acesso ao uso de apps: tudo que foi medido está no bucket de sistema.</string>
 
@@ -110,7 +112,11 @@
     <string name="drain_screen_on">Tela ligada</string>
     <string name="drain_screen_off">Tela desligada</string>
     <string name="drain_ma_and_pct">%1$.0f mA · %2$.1f %%/h</string>
+    <string name="drain_percent_per_hour">%1$.1f %%/h</string>
     <string name="drain_projection">Autonomia projetada: %1$s</string>
+    <string name="drain_projection_short">≈ %1$s restantes</string>
+    <string name="drain_projection_basis_short">últimas 24h</string>
+    <string name="level_description">Bateria em %1$d por cento.</string>
     <string name="drain_projection_none">Autonomia projetada: sem dados suficientes</string>
     <string name="drain_projection_basis">Baseada no padrão real das últimas 24h, não no consumo do último minuto.</string>
     <string name="drain_wakelock_warning">Dreno alto com a tela desligada (%1$.0f mA). Isso costuma ser wakelock preso — algo mantendo o aparelho acordado.</string>
@@ -284,4 +290,15 @@
     <string name="update_notification_title">BatteryStats %1$s disponível</string>
     <string name="update_notification_text">Toque para ver e instalar.</string>
     <string name="settings_update_notifications">Avisar sobre versões novas</string>
+
+    <!-- Confiança consolidada -->
+    <string name="confidence_high">Medição confiável</string>
+    <string name="confidence_partial">Medição parcial</string>
+    <string name="confidence_low">Medição fraca</string>
+    <string name="confidence_sheet_title">De onde vêm estes números</string>
+    <string name="confidence_coverage_explanation">Quanto do período o app estava de fato medindo. O resto são buracos: o sistema derrubou o serviço ou o aparelho reiniciou.</string>
+    <string name="confidence_windows_label">Janelas grosseiras</string>
+    <string name="confidence_windows_explanation">Janelas que fecharam por tempo com um único degrau do contador. Entram nas médias, mas nunca no ranking por app.</string>
+    <string name="confidence_step_explanation">O menor passo em que este aparelho move o contador de carga. Ele define o piso de incerteza de toda medição: quanto mais curta a janela, maior o erro.</string>
+    <string name="confidence_estimate_explanation">O consumo por app é estimado por correlação — dreno medido da janela dividido entre os apps que estavam em primeiro plano nela. Não é medição de consumo por app; a plataforma não expõe isso para um app instalado por sideload.</string>
 </resources>

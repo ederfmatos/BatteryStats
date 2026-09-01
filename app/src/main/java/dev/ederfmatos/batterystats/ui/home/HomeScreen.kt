@@ -18,6 +18,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.ederfmatos.batterystats.R
@@ -33,6 +37,7 @@ import dev.ederfmatos.batterystats.domain.drain.Coverage
 import dev.ederfmatos.batterystats.domain.drain.RegimeStats
 import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
 import dev.ederfmatos.batterystats.ui.MainUiState
+import dev.ederfmatos.batterystats.ui.common.ConfidenceChip
 import dev.ederfmatos.batterystats.ui.common.LabeledRow
 import dev.ederfmatos.batterystats.ui.common.PermissionCard
 import dev.ederfmatos.batterystats.ui.common.formatDuration
@@ -73,7 +78,7 @@ fun HomeScreen(
         if (snapshot == null) {
             UnavailableCard()
         } else {
-            LevelCard(snapshot)
+            LevelCard(snapshot, state)
             ReadingsCard(snapshot, state.currentMilliAmps)
         }
 
@@ -154,26 +159,49 @@ private fun UnavailableCard() {
     }
 }
 
+/**
+ * O card herói, e o único elevado da tela.
+ *
+ * Junta o nível com a autonomia projetada porque é essa a pergunta que faz alguém abrir um app de
+ * bateria. Antes a projeção estava em `bodyLarge`, enterrada no quarto card, depois de duas linhas
+ * de regime.
+ */
 @Composable
-private fun LevelCard(snapshot: BatterySnapshot) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+private fun LevelCard(snapshot: BatterySnapshot, state: MainUiState) {
+    val levelDescription = stringResource(R.string.level_description, snapshot.levelPct)
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = stringResource(R.string.unit_percent, snapshot.levelPct),
-                style = MaterialTheme.typography.displayMedium,
+                style = MaterialTheme.typography.displayLarge,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
             )
             LinearProgressIndicator(
                 progress = { snapshot.levelPct.coerceIn(0, 100) / 100f },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = levelDescription },
             )
             Text(
                 text = "${snapshot.status.label()} · ${snapshot.plugType.label()}",
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
             )
+
+            val hours = state.periodStats?.projection?.hoursRemaining
+            if (hours != null && hours.isFinite() && hours > 0) {
+                HorizontalDivider()
+                Text(
+                    // "≈" porque a projeção é estimativa, não leitura.
+                    text = stringResource(R.string.drain_projection_short, formatHours(hours)),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }
@@ -189,20 +217,9 @@ private fun ReadingsCard(snapshot: BatterySnapshot, currentMilliAmps: Double?) {
                     ?.let { stringResource(R.string.unit_celsius, it) } ?: unavailable,
             )
             LabeledRow(
-                label = stringResource(R.string.home_voltage),
-                value = snapshot.voltageVolts
-                    ?.let { stringResource(R.string.unit_volts, it) } ?: unavailable,
-            )
-            LabeledRow(
-                label = stringResource(R.string.home_current),
+                label = stringResource(R.string.home_current_instant),
                 value = currentMilliAmps
                     ?.let { stringResource(R.string.unit_milliamps, it) } ?: unavailable,
-            )
-            LabeledRow(
-                label = stringResource(R.string.home_charge_counter),
-                value = snapshot.chargeCounterUah
-                    ?.let { stringResource(R.string.unit_microamp_hours, it.groupedDigits()) }
-                    ?: unavailable,
             )
             LabeledRow(
                 label = stringResource(R.string.home_screen),
@@ -210,13 +227,6 @@ private fun ReadingsCard(snapshot: BatterySnapshot, currentMilliAmps: Double?) {
                     if (snapshot.screenOn) R.string.screen_on else R.string.screen_off
                 ),
             )
-            snapshot.currentNowRaw?.let { raw ->
-                Text(
-                    text = stringResource(R.string.current_raw_note, raw),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
     }
 }
@@ -288,27 +298,27 @@ private fun DrainCard(state: MainUiState) {
     }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(
-                text = stringResource(R.string.drain_title),
-                style = MaterialTheme.typography.titleMedium,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.drain_title),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = stringResource(R.string.drain_projection_basis_short),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            DrainComparison(
+                screenOn = period.stats.screenOn,
+                screenOff = period.stats.screenOff,
             )
-            RegimeRow(stringResource(R.string.drain_screen_on), period.stats.screenOn)
-            RegimeRow(stringResource(R.string.drain_screen_off), period.stats.screenOff)
-            CoverageRow(period.coverage)
-            val hours = period.projection.hoursRemaining
-            Text(
-                text = if (hours != null && hours.isFinite()) {
-                    stringResource(R.string.drain_projection, formatHours(hours))
-                } else {
-                    stringResource(R.string.drain_projection_none)
-                },
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                text = stringResource(R.string.drain_projection_basis),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // Uma peça de incerteza na tela; o resto da explicação vive no bottom sheet dela.
+            ConfidenceChip(period)
             if (state.wakelockSuspicion) {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -327,52 +337,6 @@ private fun DrainCard(state: MainUiState) {
                 }
             }
         }
-    }
-}
-
-/**
- * Uma linha de regime de tela. Quando nenhuma janela do regime fechou por acúmulo de degraus, o
- * valor sai como faixa: com o contador quantizado, um número exato ali seria falso.
- */
-@Composable
-private fun RegimeRow(label: String, regime: RegimeStats) {
-    LabeledRow(
-        label = label,
-        value = if (regime.isCoarse) {
-            stringResource(
-                R.string.drain_range,
-                regime.rangeLowMilliAmps,
-                regime.rangeHighMilliAmps,
-            )
-        } else {
-            stringResource(R.string.drain_ma_and_pct, regime.averageMilliAmps, regime.percentPerHour)
-        },
-    )
-    if (regime.isCoarse && regime.windowCount > 0) {
-        Text(
-            text = stringResource(R.string.drain_low_confidence),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun CoverageRow(coverage: Coverage) {
-    LabeledRow(
-        label = stringResource(R.string.coverage_label),
-        value = stringResource(
-            R.string.coverage_value,
-            coverage.percent.toInt(),
-            stringResource(R.string.coverage_period_24h),
-        ),
-    )
-    if (coverage.isPoor) {
-        Text(
-            text = stringResource(R.string.coverage_poor),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-        )
     }
 }
 
