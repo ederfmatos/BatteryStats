@@ -26,7 +26,11 @@ import dev.ederfmatos.batterystats.ui.apps.AppsScreen
 import dev.ederfmatos.batterystats.ui.diagnostics.DiagnosticsScreen
 import dev.ederfmatos.batterystats.ui.health.CollectionHealthScreen
 import dev.ederfmatos.batterystats.ui.history.HistoryScreen
+import dev.ederfmatos.batterystats.domain.update.InstallStep
+import dev.ederfmatos.batterystats.domain.update.UpdateManifest
 import dev.ederfmatos.batterystats.ui.home.HomeScreen
+import dev.ederfmatos.batterystats.ui.update.UpdateScreen
+import dev.ederfmatos.batterystats.ui.update.UpdateUiState
 import dev.ederfmatos.batterystats.ui.settings.SettingsScreen
 
 private enum class Tab(
@@ -37,6 +41,7 @@ private enum class Tab(
     APPS(R.string.tab_apps, R.drawable.ic_tab_apps),
     HISTORY(R.string.tab_history, R.drawable.ic_tab_history),
     COLLECTION(R.string.tab_collection, R.drawable.ic_tab_collection),
+    UPDATE(R.string.tab_update, R.drawable.ic_tab_update),
     DIAGNOSTICS(R.string.tab_diagnostics, R.drawable.ic_tab_diagnostics),
     SETTINGS(R.string.tab_settings, R.drawable.ic_tab_settings),
 }
@@ -45,6 +50,12 @@ private enum class Tab(
 @Composable
 fun AppRoot(
     state: MainUiState,
+    updateState: UpdateUiState,
+    onCheckUpdate: () -> Unit,
+    onDownloadAndInstall: (UpdateManifest) -> Unit,
+    onRetryInstallAt: (UpdateManifest, InstallStep) -> Unit,
+    onCancelUpdate: () -> Unit,
+    onExportRequested: () -> Unit,
     onStartSampling: () -> Unit,
     onStopSampling: () -> Unit,
     onRefresh: () -> Unit,
@@ -99,6 +110,16 @@ fun AppRoot(
             Tab.HISTORY -> HistoryScreen(state = state, modifier = contentModifier)
 
             Tab.COLLECTION -> CollectionHealthScreen(state = state, modifier = contentModifier)
+
+            Tab.UPDATE -> UpdateScreen(
+                state = updateState,
+                onCheck = onCheckUpdate,
+                onDownloadAndInstall = onDownloadAndInstall,
+                onRetryAt = onRetryInstallAt,
+                onCancel = onCancelUpdate,
+                onExportRequested = onExportRequested,
+                modifier = contentModifier,
+            )
 
             Tab.DIAGNOSTICS -> DiagnosticsScreen(
                 state = state,

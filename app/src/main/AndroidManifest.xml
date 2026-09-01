@@ -88,5 +88,25 @@
         <receiver
             android:name=".data.receiver.SamplingWatchdogReceiver"
             android:exported="false" />
+
+        <!-- Desfecho das sessões do PackageInstaller. -->
+        <receiver
+            android:name=".data.update.InstallResultReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="dev.ederfmatos.batterystats.INSTALL_RESULT" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Entrega o APK baixado ao instalador do sistema como content://, nunca file://. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

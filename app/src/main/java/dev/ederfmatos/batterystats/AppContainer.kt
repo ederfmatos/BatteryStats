@@ -14,6 +14,12 @@ import dev.ederfmatos.batterystats.data.prefs.SettingsRepository
 import dev.ederfmatos.batterystats.data.receiver.ScreenStateTracker
 import dev.ederfmatos.batterystats.data.usage.AppLabelResolver
 import dev.ederfmatos.batterystats.data.usage.ForegroundAppResolver
+import dev.ederfmatos.batterystats.data.update.ApkInstaller
+import dev.ederfmatos.batterystats.data.update.ApkVerifier
+import dev.ederfmatos.batterystats.data.update.CrashGuard
+import dev.ederfmatos.batterystats.data.update.RemoteConfigRepository
+import dev.ederfmatos.batterystats.data.update.UpdateChecker
+import dev.ederfmatos.batterystats.data.update.UpdateRepository
 
 /**
  * Injeção manual. O projeto é pequeno demais para justificar Hilt ou Koin — o container é criado
@@ -47,6 +53,24 @@ class AppContainer(context: Context) {
     val foregroundAppResolver: ForegroundAppResolver by lazy { ForegroundAppResolver(appContext) }
 
     val appLabelResolver: AppLabelResolver by lazy { AppLabelResolver(appContext) }
+
+    val updateChecker: UpdateChecker by lazy { UpdateChecker(appContext) }
+
+    val remoteConfigRepository: RemoteConfigRepository by lazy {
+        RemoteConfigRepository(appContext)
+    }
+
+    val crashGuard: CrashGuard by lazy { CrashGuard(appContext) }
+
+    val updateRepository: UpdateRepository by lazy {
+        UpdateRepository(
+            context = appContext,
+            dao = database.batteryDao(),
+            checker = updateChecker,
+            verifier = ApkVerifier(appContext),
+            installer = ApkInstaller(appContext),
+        )
+    }
 
     val statsRepository: StatsRepository by lazy {
         StatsRepository(

@@ -12,8 +12,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         BatterySampleEntity::class,
         DailyAggregateEntity::class,
         MeasurementGapEntity::class,
+        UpdateAttemptEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class BatteryDatabase : RoomDatabase() {
@@ -69,12 +70,35 @@ abstract class BatteryDatabase : RoomDatabase() {
             }
         }
 
+        /** 3 → 4: histórico de tentativas de atualização. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS update_attempt (
+                        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        versionCode INTEGER NOT NULL,
+                        step TEXT NOT NULL,
+                        succeeded INTEGER NOT NULL,
+                        failure TEXT,
+                        detail TEXT,
+                        timestampMs INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_update_attempt_timestampMs " +
+                        "ON update_attempt (timestampMs)"
+                )
+            }
+        }
+
         fun build(context: Context): BatteryDatabase = Room.databaseBuilder(
             context.applicationContext,
             BatteryDatabase::class.java,
             "batterystats.db",
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
     }
 }

@@ -179,4 +179,64 @@
     <string name="health_collection_exact_alarm_rationale">O alarme exato é o que ressuscita o serviço quando o sistema o derruba. Sem ele, o app só volta quando você abrir.</string>
     <string name="health_collection_exact_alarm_action">Permitir alarmes exatos</string>
     <string name="home_coverage_banner">Cobertura de %1$d%% nas últimas 24h. Veja a aba Coleta para corrigir.</string>
+
+    <!-- Atualização (Fase 8) -->
+    <string name="tab_update">Atualizar</string>
+    <string name="update_title">Atualização</string>
+    <string name="update_installed">Instalada: %1$s (build %2$d)</string>
+    <string name="update_check_now">Verificar agora</string>
+    <string name="update_state_checking">Verificando…</string>
+    <string name="update_state_up_to_date">Nenhuma versão nova.</string>
+    <string name="update_state_available">Nova versão disponível: %1$s (%2$s)</string>
+    <string name="update_state_downloading">Baixando %1$d%%</string>
+    <string name="update_state_verifying">Verificando integridade e assinatura…</string>
+    <string name="update_state_installing_silent">Instalando em segundo plano…</string>
+    <string name="update_state_installing_dialog">Aguardando sua confirmação no diálogo do sistema.</string>
+    <string name="update_state_installed">Atualizado. A versão nova entra em vigor no próximo arranque.</string>
+    <string name="update_download_install">Baixar e instalar</string>
+    <string name="update_cancel">Cancelar</string>
+    <string name="update_changelog">Novidades</string>
+
+    <!-- Mensagens de erro, cada uma com ação (8.5.1) -->
+    <string name="update_error_conflict">Esta versão foi assinada com outra chave e não pode substituir a instalada.</string>
+    <string name="update_error_conflict_action">Exporte o banco antes de qualquer coisa: a única saída é desinstalar e reinstalar, o que apaga as amostras.</string>
+    <string name="update_error_incompatible">Versão incompatível com este Android.</string>
+    <string name="update_error_incompatible_detail">O APK exige API %1$d; este aparelho tem API %2$d.</string>
+    <string name="update_error_storage">Espaço insuficiente.</string>
+    <string name="update_error_storage_detail">Faltam cerca de %1$s.</string>
+    <string name="update_error_aborted">Instalação cancelada.</string>
+    <string name="update_error_aborted_action">Tentar de novo (o APK já está baixado)</string>
+    <string name="update_error_blocked">Bloqueado pelo sistema ou por um app de segurança.</string>
+    <string name="update_error_corrupted">Download corrompido.</string>
+    <string name="update_error_corrupted_action">Baixar de novo</string>
+    <string name="update_error_unknown">A instalação não foi concluída.</string>
+
+    <string name="update_step_open_apk">Instalar manualmente</string>
+    <string name="update_step_open_apk_hint">Abre o APK já baixado no instalador do Android. Não baixa de novo.</string>
+    <string name="update_step_direct_link">Baixar a versão mais recente</string>
+    <string name="update_step_copy_link">Copiar link</string>
+    <string name="update_step_share_link">Compartilhar</string>
+    <string name="update_link_copied">Link copiado.</string>
+    <string name="update_unknown_sources_title">Permissão de fontes desconhecidas</string>
+    <string name="update_unknown_sources_rationale">O Android exige essa permissão para que o app possa instalar a própria atualização. Ela vale só para este app.</string>
+    <string name="update_unknown_sources_action">Abrir configurações</string>
+
+    <string name="update_history_title">Histórico de atualizações</string>
+    <string name="update_history_empty">Nenhuma tentativa registrada ainda.</string>
+    <string name="update_history_entry">v%1$d · %2$s · %3$s</string>
+    <string name="update_history_ok">sucesso</string>
+    <string name="update_step_silent">silenciosa</string>
+    <string name="update_step_system_dialog">diálogo do sistema</string>
+    <string name="update_step_permission">permissão de fontes</string>
+    <string name="update_step_apk">instalador do sistema</string>
+    <string name="update_step_link">link direto</string>
+
+    <!-- Recuperação (8.7) -->
+    <string name="recovery_title">A versão nova não está subindo</string>
+    <string name="recovery_body">O app falhou nos dois primeiros arranques depois da atualização para a build %1$d. A versão anterior era a build %2$d.</string>
+    <string name="recovery_no_previous">Não há registro de uma versão anterior.</string>
+    <string name="recovery_downgrade_warning">O Android não instala uma versão mais antiga por cima: seria preciso desinstalar primeiro, e isso APAGA o banco de amostras. Exporte antes.</string>
+    <string name="recovery_export">Exportar o banco agora</string>
+    <string name="recovery_open_releases">Abrir as releases anteriores</string>
+    <string name="recovery_continue">Continuar mesmo assim</string>
 </resources>

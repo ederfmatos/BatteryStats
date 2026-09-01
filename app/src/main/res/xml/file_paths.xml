@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O único caminho compartilhado é o diretório dos APKs baixados, dentro do cache. O degrau 4 da
+  cascata precisa entregar um content:// desse arquivo para o instalador do sistema.
+-->
+<paths>
+    <cache-path
+        name="updates"
+        path="updates/" />
+</paths>

@@ -54,6 +54,12 @@ interface BatteryDao {
     @Query("DELETE FROM measurement_gap WHERE endMs < :beforeMs")
     suspend fun deleteGapsBefore(beforeMs: Long): Int
 
+    @Insert
+    suspend fun insertUpdateAttempt(attempt: UpdateAttemptEntity): Long
+
+    @Query("SELECT * FROM update_attempt ORDER BY timestampMs DESC LIMIT :limit")
+    fun updateAttempts(limit: Int = 50): Flow<List<UpdateAttemptEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertDailyAggregate(aggregate: DailyAggregateEntity)
 
