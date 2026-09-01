@@ -69,7 +69,7 @@ Também **não há** `BATTERY_STATS` no manifest — ver "o que o app não mede"
 
 O CI compila e publica o APK a cada push.
 
-1. Abra `https://github.com/<usuário>/BatteryStats/actions` no navegador **do celular**.
+1. Abra `https://github.com/ederfmatos/BatteryStats/actions` no navegador **do celular**.
 2. Toque na execução mais recente com o check verde.
 3. Role até **Artifacts** e baixe `batterystats-<sha>`. O GitHub entrega um `.zip`.
 4. Descompacte (o gerenciador de arquivos do Android faz isso) e abra o `app-debug.apk`.
