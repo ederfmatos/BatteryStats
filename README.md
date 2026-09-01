@@ -95,6 +95,11 @@ pelo git) e preencha.
 
 ## Auto-atualização
 
+> O repositório é **público** por necessidade desta funcionalidade: o app baixa de
+> `releases/latest/download/...` sem autenticação, e num repositório privado essas URLs devolvem
+> 404 para qualquer cliente sem token. Embutir um token no APK seria pior — ele vazaria junto com
+> o APK.
+
 O CI compila e publica uma Release a cada push em `main`. O app checa `latest.json`, compara o
 `versionCode` com o instalado, baixa o APK e se instala.
 
