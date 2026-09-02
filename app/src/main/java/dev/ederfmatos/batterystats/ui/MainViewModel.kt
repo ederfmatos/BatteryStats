@@ -17,6 +17,7 @@ import dev.ederfmatos.batterystats.data.prefs.SamplingInterval
 import dev.ederfmatos.batterystats.data.sampling.SamplingService
 import dev.ederfmatos.batterystats.domain.attribution.AppEnergyUsage
 import dev.ederfmatos.batterystats.domain.drain.WakelockSuspicionDetector
+import dev.ederfmatos.batterystats.domain.health.AbsoluteHealth
 import dev.ederfmatos.batterystats.domain.health.BatteryHealthEstimate
 import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
 import dev.ederfmatos.batterystats.domain.model.CurrentCalibration
@@ -40,6 +41,7 @@ data class MainUiState(
     /** Instante da amostra mais antiga ainda no banco. 0 quando não há nenhuma. */
     val firstSampleMs: Long = 0L,
     val health: BatteryHealthEstimate? = null,
+    val absoluteHealth: AbsoluteHealth? = null,
     val serviceKillCount: Int = 0,
     val canScheduleExactAlarms: Boolean = true,
     val hasBatteryStatsPermission: Boolean = false,
@@ -106,6 +108,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val health = runCatching { container.statsRepository.healthEstimate() }
                 .onFailure { Log.e(TAG, "Falha ao estimar a saúde da bateria", it) }
                 .getOrNull()
+            val absolute = runCatching { container.statsRepository.absoluteHealth() }
+                .onFailure { Log.e(TAG, "Falha ao medir a capacidade pelas sessões de carga", it) }
+                .getOrNull()
             val serviceKills = runCatching { container.statsRepository.serviceKillCount() }
                 .onFailure { Log.e(TAG, "Falha ao contar mortes do serviço", it) }
                 .getOrDefault(0)
@@ -117,6 +122,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 appRanking = ranking,
                 history = history,
                 health = health,
+                absoluteHealth = absolute,
                 serviceKillCount = serviceKills,
                 canScheduleExactAlarms = container.samplingWatchdog.canScheduleExact(),
                 hasBatteryStatsPermission = container.healthStatsReader.hasBatteryStatsPermission(),

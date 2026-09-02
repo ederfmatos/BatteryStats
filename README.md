@@ -30,9 +30,30 @@ aproximado** de quais apps mais gastam. Instalação por sideload — não vai p
 - **Consumo de apps em segundo plano.** Janelas com a tela desligada vão inteiras para o bucket
   "Sistema / segundo plano" — atribuir dreno de tela desligada a um app específico pelo
   `UsageEvents` seria invenção.
-- **Capacidade absoluta ou saúde de fábrica da bateria.** A capacidade de projeto não é exposta por
-  API pública. A tela de saúde mostra uma comparação **relativa**: a carga cheia observada agora
-  contra a maior que o app já registrou.
+- **Corrente medida por app.** Ver "Modo avançado" abaixo: dá para medir *tempo* por app, nunca
+  corrente.
+
+## Capacidade real da bateria
+
+O app mede a capacidade **durante o carregamento**, não durante a descarga. O motivo é o degrau de
+quantização: carregando, o `CHARGE_COUNTER` anda cerca de dez vezes mais rápido, e os 4076 µAh que
+dominam qualquer janela curta de repouso viram ruído irrelevante.
+
+Uma sessão de carga que suba pelo menos 40 pontos de nível (ex.: 30% → 90%) dá a capacidade cheia
+implícita em **mAh absolutos**, com incerteza abaixo de 20 mAh. Sessões mais curtas são
+**descartadas**, não exibidas com ressalva — é de faixas estreitas que saem aqueles prints de
+"saúde da bateria: 256%" que circulam por aí.
+
+O denominador vem do `power_profile.xml` **deste aparelho** (`battery.capacity`), lido por
+`getIdentifier` — sem permissão, sem API oculta. Outros apps da categoria usam uma tabela de
+capacidade por modelo editável à mão, e denominador errado produz percentual sem sentido exibido
+com toda a confiança.
+
+> A capacidade de projeto é **declarada pelo fabricante**, não medida. Vários OEMs deixam o valor
+> default do AOSP ali. Quando o aparelho não declara, o app mostra o mAh medido e não inventa
+> percentual.
+
+A contagem de ciclos vem de `EXTRA_CYCLE_COUNT` (API 34+), quando o aparelho reporta.
 
 ## Modo avançado — um comando `adb`, uma vez
 

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.os.Build
 import android.os.PowerManager
 import android.util.Log
 import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
@@ -93,6 +94,17 @@ class AndroidBatteryReader(
     }
 
     private fun isScreenOn(): Boolean = powerManager?.isInteractive ?: false
+
+    /**
+     * Contagem de ciclos, quando o aparelho reporta. `EXTRA_CYCLE_COUNT` é extra público do
+     * ACTION_BATTERY_CHANGED desde a API 34, mas vem do HAL do fabricante — muitos devolvem 0 ou
+     * simplesmente não põem o extra. Zero é tratado como ausente, não como "bateria nova".
+     */
+    fun cycleCount(): Int? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return null
+        val intent = readStickyBatteryIntent() ?: return null
+        return intent.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, 0).takeIf { it > 0 }
+    }
 
     /** Uma leitura crua de CURRENT_NOW, sem calibração e sem mediana. */
     fun readCurrentNowRaw(): Long? = intProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)

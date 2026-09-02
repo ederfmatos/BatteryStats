@@ -20,7 +20,11 @@ import dev.ederfmatos.batterystats.domain.drain.MeasurementGap
 import dev.ederfmatos.batterystats.domain.drain.QuantizationDetector
 import dev.ederfmatos.batterystats.domain.drain.RuntimeProjection
 import dev.ederfmatos.batterystats.domain.drain.RuntimeProjector
+import dev.ederfmatos.batterystats.domain.health.AbsoluteHealth
+import dev.ederfmatos.batterystats.domain.health.AbsoluteHealthCalculator
 import dev.ederfmatos.batterystats.domain.health.BatteryHealthEstimate
+import dev.ederfmatos.batterystats.domain.health.ChargeSessionAnalyzer
+import dev.ederfmatos.batterystats.domain.health.UidChargeSample
 import dev.ederfmatos.batterystats.domain.health.BatteryHealthEstimator
 import dev.ederfmatos.batterystats.domain.model.BatterySnapshot
 import dev.ederfmatos.batterystats.domain.model.CurrentCalibration
@@ -60,6 +64,7 @@ class StatsRepository(
     private val healthEstimator: BatteryHealthEstimator = BatteryHealthEstimator(),
     private val coverageCalculator: CoverageCalculator = CoverageCalculator(),
     private val quantizationDetector: QuantizationDetector = QuantizationDetector(),
+    private val chargeSessionAnalyzer: ChargeSessionAnalyzer = ChargeSessionAnalyzer(),
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
@@ -148,6 +153,39 @@ class StatsRepository(
         settingsRepository.setCalibration(calibration)
         calibration
     }
+
+    /**
+     * Saúde em números absolutos, medida pelas sessões de carga.
+     *
+     * Roda sobre o histórico inteiro, não sobre um período: sessões de carga longas o bastante são
+     * raras, e descartar as antigas jogaria fora justamente a série que mostra a tendência.
+     */
+    suspend fun absoluteHealth(): AbsoluteHealth = withContext(Dispatchers.Default) {
+        val samples = withContext(Dispatchers.IO) { dao.allSamples().map { it.toSnapshot() } }
+        val sessions = chargeSessionAnalyzer.sessions(
+            samples.map { sample ->
+                UidChargeSample(
+                    timestampMs = sample.timestampMs,
+                    levelPct = sample.levelPct,
+                    chargeCounterUah = sample.chargeCounterUah,
+                    isCharging = sample.isCharging,
+                )
+            }
+        )
+        val stepUah = quantizationDetector.detectStepUah(samples)
+            ?: QuantizationDetector.FALLBACK_STEP_UAH
+
+        AbsoluteHealthCalculator.calculate(
+            sessions = sessions,
+            declaredCapacityMah = declaredCapacityMah,
+            quantizationStepUah = stepUah,
+            cycleCount = cycleCount,
+        )
+    }
+
+    /** Preenchidos pelo container: vêm de fontes Android, não do banco. */
+    var declaredCapacityMah: Double? = null
+    var cycleCount: Int? = null
 
     suspend fun healthEstimate(): BatteryHealthEstimate = withContext(Dispatchers.Default) {
         val samples = withContext(Dispatchers.IO) { dao.allSamples().map { it.toSnapshot() } }

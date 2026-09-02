@@ -11,6 +11,7 @@ import dev.ederfmatos.batterystats.data.sampling.InteractiveTimeCounter
 import dev.ederfmatos.batterystats.data.sampling.SamplingWatchdog
 import dev.ederfmatos.batterystats.data.db.BatteryDatabase
 import dev.ederfmatos.batterystats.data.health.HealthStatsReader
+import dev.ederfmatos.batterystats.data.health.PowerProfileReader
 import dev.ederfmatos.batterystats.data.prefs.SettingsRepository
 import dev.ederfmatos.batterystats.data.receiver.ScreenStateTracker
 import dev.ederfmatos.batterystats.data.usage.AppLabelResolver
@@ -60,6 +61,9 @@ class AppContainer(context: Context) {
 
     val healthStatsReader: HealthStatsReader by lazy { HealthStatsReader(appContext) }
 
+    /** Lido uma vez: o power_profile.xml do aparelho não muda em tempo de execução. */
+    val powerProfile: PowerProfileReader.PowerProfile by lazy { PowerProfileReader().read() }
+
     val updateChecker: UpdateChecker by lazy { UpdateChecker(appContext) }
 
     val remoteConfigRepository: RemoteConfigRepository by lazy {
@@ -85,7 +89,10 @@ class AppContainer(context: Context) {
             dao = database.batteryDao(),
             settingsRepository = settingsRepository,
             foregroundAppResolver = foregroundAppResolver,
-        )
+        ).apply {
+            declaredCapacityMah = powerProfile.batteryCapacityMah
+            cycleCount = androidBatteryReader.cycleCount()
+        }
     }
 
     val reportBuilder: ReportBuilder by lazy {

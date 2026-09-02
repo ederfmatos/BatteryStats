@@ -321,4 +321,16 @@
     <string name="measured_invisible">%1$s ativo sem estar visível</string>
     <string name="measured_title">Medido pelo sistema</string>
     <string name="measured_counters_reset">Os contadores do sistema foram reiniciados neste intervalo; os números abaixo valem do reinício para cá.</string>
+
+    <!-- Saúde absoluta, medida pelas sessões de carga -->
+    <string name="absolute_health_title">Capacidade medida</string>
+    <string name="absolute_health_waiting">Nenhuma sessão de carga longa registrada ainda. Carregue o aparelho de uns 30%% até acima de 80%% com o app medindo, e a capacidade real aparece aqui.</string>
+    <string name="absolute_health_percent">%1$.0f%% da capacidade de fábrica</string>
+    <string name="absolute_health_measured">%1$.0f mAh medidos</string>
+    <string name="absolute_health_range">%1$.0f–%2$.0f mAh (preliminar)</string>
+    <string name="absolute_health_declared">Declarada pelo aparelho: %1$.0f mAh</string>
+    <string name="absolute_health_sessions">%1$d sessões de carga válidas</string>
+    <string name="absolute_health_cycles">%1$d ciclos de carga</string>
+    <string name="absolute_health_declared_caveat">A capacidade de fábrica vem do power_profile.xml deste aparelho — é declarada pelo fabricante, não medida. A capacidade medida vem do contador de carga durante o carregamento, onde ele anda rápido o bastante para o degrau de quantização não atrapalhar.</string>
+    <string name="absolute_health_no_declared">Este aparelho não declara a capacidade de projeto, então não dá para calcular percentual. O mAh medido acima continua válido; compare com a especificação do modelo.</string>
 </resources>

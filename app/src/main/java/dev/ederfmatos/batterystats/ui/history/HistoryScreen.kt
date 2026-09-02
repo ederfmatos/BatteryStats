@@ -89,12 +89,94 @@ fun HistoryScreen(
             }
         }
 
+        AbsoluteHealthCard(state)
         HealthCard(state)
 
         // O relatório é o payoff do app, mas não é diário: fica a um toque de onde os dados que
         // ele resume estão sendo olhados, em vez de ocupar uma aba permanente.
         TextButton(onClick = onOpenReport) {
             Text(stringResource(R.string.report_share))
+        }
+    }
+}
+
+/**
+ * Saúde em números absolutos, medida pelas sessões de carga.
+ *
+ * Fica acima da estimativa relativa porque responde a mesma pergunta melhor: um mAh medido contra
+ * a capacidade que o aparelho declara vale mais que "está pior que o melhor dia já visto".
+ */
+@Composable
+private fun AbsoluteHealthCard(state: MainUiState) {
+    val health = state.absoluteHealth ?: return
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.absolute_health_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+
+            val measured = health.measuredCapacityMah
+            if (measured == null) {
+                Text(
+                    text = stringResource(R.string.absolute_health_waiting),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            } else {
+                val percent = health.healthPercent
+                if (percent != null) {
+                    Text(
+                        text = stringResource(R.string.absolute_health_percent, percent),
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                }
+                Text(
+                    // Uma sessão só é um ponto, não uma tendência: aparece como faixa.
+                    text = if (health.isPreliminary) {
+                        stringResource(
+                            R.string.absolute_health_range,
+                            health.rangeLowMah ?: measured,
+                            health.rangeHighMah ?: measured,
+                        )
+                    } else {
+                        stringResource(R.string.absolute_health_measured, measured)
+                    },
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                health.declaredCapacityMah?.let { declared ->
+                    Text(
+                        text = stringResource(R.string.absolute_health_declared, declared),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.absolute_health_sessions, health.sessionCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                health.cycleCount?.let { cycles ->
+                    Text(
+                        text = stringResource(R.string.absolute_health_cycles, cycles),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            if (health.declaredCapacityMah == null) {
+                Text(
+                    text = stringResource(R.string.absolute_health_no_declared),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.absolute_health_declared_caveat),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
