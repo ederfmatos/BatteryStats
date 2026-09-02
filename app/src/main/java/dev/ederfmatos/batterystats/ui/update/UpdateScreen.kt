@@ -69,6 +69,7 @@ fun UpdateScreen(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 StateBlock(state.state, onDownloadAndInstall, onCancel)
+                LastCheckLine(state)
                 TextButton(onClick = onCheck) { Text(stringResource(R.string.update_check_now)) }
             }
         }
@@ -88,6 +89,44 @@ fun UpdateScreen(
 
         DirectLinkCard(context)
         HistoryCard(state.attempts)
+    }
+}
+
+/**
+ * Quando a checagem automática rodou e o que ela concluiu.
+ *
+ * Existe para separar dois motivos que produzem o mesmo silêncio: o worker não ter rodado — rede
+ * medida, bateria baixa, sistema adiando — e ele ter rodado sem nada para anunciar.
+ */
+@Composable
+private fun LastCheckLine(state: UpdateUiState) {
+    if (state.lastCheckMs <= 0L) {
+        Text(
+            text = stringResource(R.string.update_never_checked),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
+    val elapsed = System.currentTimeMillis() - state.lastCheckMs
+    Text(
+        text = stringResource(
+            R.string.update_last_check,
+            formatElapsed(elapsed),
+            state.lastCheckResult,
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun formatElapsed(millis: Long): String {
+    val minutes = millis / 60_000L
+    return when {
+        minutes < 1 -> stringResource(R.string.elapsed_just_now)
+        minutes < 60 -> stringResource(R.string.elapsed_minutes, minutes)
+        else -> stringResource(R.string.elapsed_hours, minutes / 60)
     }
 }
 

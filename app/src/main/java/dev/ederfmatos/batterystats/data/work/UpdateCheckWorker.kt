@@ -32,11 +32,16 @@ class UpdateCheckWorker(
         val container = (applicationContext as Application).appContainer
         return try {
             container.remoteConfigRepository.refresh()
-            when (val check = container.updateRepository.check()) {
+            val outcome = when (val check = container.updateRepository.check()) {
                 is UpdateCheck.Available -> notifyOnce(container, check)
-                is UpdateCheck.Failed -> Log.i(TAG, "Checagem falhou: ${check.reason}")
-                else -> Unit
+                is UpdateCheck.Failed -> "falhou: ${check.reason}"
+                is UpdateCheck.Incompatible -> "versão incompatível com este Android"
+                UpdateCheck.UpToDate -> "nenhuma versão nova"
             }
+            // Gravado sempre: se a notificação não chegar, esta linha na tela de Atualização diz
+            // se foi porque o worker não rodou ou porque ele rodou e não tinha o que anunciar.
+            container.settingsRepository.recordUpdateCheck(System.currentTimeMillis(), outcome)
+            Log.i(TAG, "Checagem concluída: $outcome")
             Result.success()
         } catch (e: IOException) {
             Log.w(TAG, "Checagem de atualização sem rede", e)
@@ -52,14 +57,18 @@ class UpdateCheckWorker(
     private suspend fun notifyOnce(
         container: dev.ederfmatos.batterystats.AppContainer,
         check: UpdateCheck.Available,
-    ) {
+    ): String {
         val settings = container.settingsRepository.settings.first()
-        if (!settings.updateNotificationsEnabled) return
-        if (settings.lastNotifiedVersionCode >= check.manifest.versionCode) return
+        val version = check.manifest.versionName
+        if (!settings.updateNotificationsEnabled) return "v$version disponível, aviso desligado"
+        if (settings.lastNotifiedVersionCode >= check.manifest.versionCode) {
+            return "v$version já anunciada"
+        }
 
-        Log.i(TAG, "Anunciando a versão ${check.manifest.versionName}")
+        Log.i(TAG, "Anunciando a versão $version")
         container.updateNotifications.notifyAvailable(check.manifest)
         container.settingsRepository.setLastNotifiedVersionCode(check.manifest.versionCode)
+        return "v$version anunciada"
     }
 
     companion object {

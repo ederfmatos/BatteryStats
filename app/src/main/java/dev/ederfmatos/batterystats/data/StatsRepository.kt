@@ -8,6 +8,8 @@ import dev.ederfmatos.batterystats.data.prefs.SettingsRepository
 import dev.ederfmatos.batterystats.data.usage.ForegroundAppResolver
 import dev.ederfmatos.batterystats.domain.attribution.AppAttributionCalculator
 import dev.ederfmatos.batterystats.domain.attribution.AppEnergyUsage
+import dev.ederfmatos.batterystats.domain.attribution.BackgroundActivity
+import dev.ederfmatos.batterystats.domain.attribution.BackgroundActivityCalculator
 import dev.ederfmatos.batterystats.domain.drain.AdaptiveWindowBuilder
 import dev.ederfmatos.batterystats.domain.drain.Coverage
 import dev.ederfmatos.batterystats.domain.drain.CoverageCalculator
@@ -20,6 +22,7 @@ import dev.ederfmatos.batterystats.domain.drain.MeasurementGap
 import dev.ederfmatos.batterystats.domain.drain.QuantizationDetector
 import dev.ederfmatos.batterystats.domain.drain.RuntimeProjection
 import dev.ederfmatos.batterystats.domain.drain.RuntimeProjector
+import dev.ederfmatos.batterystats.domain.drain.ScreenRegime
 import dev.ederfmatos.batterystats.domain.health.AbsoluteHealth
 import dev.ederfmatos.batterystats.domain.health.AbsoluteHealthCalculator
 import dev.ederfmatos.batterystats.domain.health.BatteryHealthEstimate
@@ -126,6 +129,33 @@ class StatsRepository(
                 windows = analysis.windows,
                 foregroundIntervals = intervals,
                 idleBaselineMilliAmps = stats.idleBaselineMilliAmps,
+            )
+        }
+
+    /**
+     * Quem manteve serviço ativo durante as janelas de tela apagada.
+     *
+     * Só considera janelas realmente medidas: um serviço rodando dentro de um buraco de
+     * amostragem não é correlacionável com consumo nenhum, porque nesse período não houve medição.
+     */
+    suspend fun backgroundActivity(period: StatsPeriod): List<BackgroundActivity> =
+        withContext(Dispatchers.Default) {
+            val nowMs = clock()
+            val fromMs = nowMs - period.days * MILLIS_PER_DAY
+            val calibration = settingsRepository.settings.first().calibration
+            val analysis = windowBuilder.analyze(
+                snapshotsSince(fromMs),
+                gapsSince(fromMs),
+                calibration,
+            )
+            val screenOffWindows = analysis.windows
+                .filter { it.screen == ScreenRegime.OFF }
+                .map { it.startMs..it.endMs }
+            if (screenOffWindows.isEmpty()) return@withContext emptyList()
+
+            BackgroundActivityCalculator.calculate(
+                screenOffWindows = screenOffWindows,
+                serviceIntervals = foregroundAppResolver.foregroundServiceIntervals(fromMs, nowMs),
             )
         }
 

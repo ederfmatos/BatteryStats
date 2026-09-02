@@ -38,6 +38,7 @@ import dev.ederfmatos.batterystats.R
 import dev.ederfmatos.batterystats.appContainerFromContext
 import dev.ederfmatos.batterystats.data.StatsPeriod
 import dev.ederfmatos.batterystats.domain.attribution.AppEnergyUsage
+import dev.ederfmatos.batterystats.domain.attribution.BackgroundActivity
 import dev.ederfmatos.batterystats.ui.MainUiState
 import dev.ederfmatos.batterystats.ui.common.PermissionCard
 import dev.ederfmatos.batterystats.ui.common.formatDuration
@@ -121,6 +122,9 @@ fun AppsScreen(
                     AppRow(usage, maxMah)
                     HorizontalDivider()
                 }
+                if (state.backgroundActivity.isNotEmpty()) {
+                    item { BackgroundActivitySection(state.backgroundActivity) }
+                }
             }
         }
 
@@ -134,6 +138,48 @@ fun AppsScreen(
                     .padding(16.dp),
             )
         }
+    }
+}
+
+/**
+ * Quem manteve serviço ativo com a tela apagada.
+ *
+ * Fica no fim da lista de propósito: não é um ranking de consumo e não pode ser lido como um. É
+ * tempo medido, não mAh dividido — e é justamente por não dividir nada que ele é confiável.
+ */
+@Composable
+private fun BackgroundActivitySection(activity: List<BackgroundActivity>) {
+    val context = LocalContext.current
+    val container = remember(context) { appContainerFromContext(context) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.background_title),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        activity.take(5).forEach { entry ->
+            val label = remember(entry.packageName) {
+                container.appLabelResolver.label(entry.packageName)
+            }
+            Text(
+                text = stringResource(
+                    R.string.background_entry,
+                    label,
+                    formatDuration(entry.activeMs),
+                    (entry.fractionOfScreenOff * 100).toInt(),
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        Text(
+            text = stringResource(R.string.background_explanation),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

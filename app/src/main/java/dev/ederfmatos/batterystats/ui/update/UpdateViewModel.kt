@@ -29,6 +29,8 @@ data class UpdateUiState(
     val installedVersionCode: Long = 0L,
     val attempts: List<UpdateAttempt> = emptyList(),
     val canRequestPackageInstalls: Boolean = true,
+    val lastCheckMs: Long = 0L,
+    val lastCheckResult: String = "",
 )
 
 /**
@@ -60,6 +62,14 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
         }
         viewModelScope.launch {
             InstallResultReceiver.results.collect(::onInstallOutcome)
+        }
+        viewModelScope.launch {
+            container.settingsRepository.settings.collect { settings ->
+                _uiState.value = _uiState.value.copy(
+                    lastCheckMs = settings.lastUpdateCheckMs,
+                    lastCheckResult = settings.lastUpdateCheckResult,
+                )
+            }
         }
     }
 

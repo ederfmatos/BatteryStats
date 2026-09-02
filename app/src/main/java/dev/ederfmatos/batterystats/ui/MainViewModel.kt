@@ -16,6 +16,7 @@ import dev.ederfmatos.batterystats.data.prefs.AppSettings
 import dev.ederfmatos.batterystats.data.prefs.SamplingInterval
 import dev.ederfmatos.batterystats.data.sampling.SamplingService
 import dev.ederfmatos.batterystats.domain.attribution.AppEnergyUsage
+import dev.ederfmatos.batterystats.domain.attribution.BackgroundActivity
 import dev.ederfmatos.batterystats.domain.drain.WakelockSuspicionDetector
 import dev.ederfmatos.batterystats.domain.health.AbsoluteHealth
 import dev.ederfmatos.batterystats.domain.health.BatteryHealthEstimate
@@ -36,6 +37,7 @@ data class MainUiState(
     val wakelockSuspicion: Boolean = false,
     val appRanking: List<AppEnergyUsage> = emptyList(),
     val appPeriod: StatsPeriod = StatsPeriod.TODAY,
+    val backgroundActivity: List<BackgroundActivity> = emptyList(),
     val history: List<BatterySnapshot> = emptyList(),
     val sampleCount: Int = 0,
     /** Instante da amostra mais antiga ainda no banco. 0 quando não há nenhuma. */
@@ -98,6 +100,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val ranking = runCatching { container.statsRepository.appRanking(period) }
                 .onFailure { Log.e(TAG, "Falha ao montar o ranking de apps", it) }
                 .getOrDefault(emptyList())
+            val background = runCatching { container.statsRepository.backgroundActivity(period) }
+                .onFailure { Log.e(TAG, "Falha ao apurar serviços em segundo plano", it) }
+                .getOrDefault(emptyList())
             val history = runCatching {
                 container.statsRepository.snapshotsSince(
                     System.currentTimeMillis() - HISTORY_WINDOW_MS
@@ -120,6 +125,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 periodStats = stats,
                 wakelockSuspicion = stats?.stats?.let { wakelockDetector.isSuspicious(it) } ?: false,
                 appRanking = ranking,
+                backgroundActivity = background,
                 history = history,
                 health = health,
                 absoluteHealth = absolute,

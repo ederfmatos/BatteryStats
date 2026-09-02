@@ -3,6 +3,7 @@ package dev.ederfmatos.batterystats.data.usage
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import dev.ederfmatos.batterystats.domain.attribution.ForegroundInterval
 import dev.ederfmatos.batterystats.domain.model.ForegroundReason
@@ -105,6 +106,50 @@ class ForegroundAppResolver(private val context: Context) {
         }
 
         lastProcessedEventMs.set(maxOf(latestEventMs, nowMs))
+    }
+
+    /**
+     * Intervalos em que cada app manteve um **foreground service** ativo.
+     *
+     * `FOREGROUND_SERVICE_START` / `_STOP` existem desde a API 29 e já são cobertos pela permissão
+     * de acesso ao uso que o app pede. São o que permite dar nome ao bucket "Sistema / segundo
+     * plano": numa janela de três horas de tela apagada a 40 mA, em vez de "sistema", dá para
+     * dizer que o app X manteve um serviço ativo durante 2h47 dela.
+     *
+     * Isso **não** é atribuição de consumo — nenhum mAh é dividido por aqui. É um fato datado que
+     * o usuário pode conferir, e é exatamente por isso que ele vale mais do que uma estimativa.
+     */
+    fun foregroundServiceIntervals(fromMs: Long, toMs: Long): List<ForegroundInterval> {
+        if (!hasAccess() || toMs <= fromMs) return emptyList()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return emptyList()
+        val events = queryEvents(fromMs, toMs) ?: return emptyList()
+
+        val intervals = mutableListOf<ForegroundInterval>()
+        val openedAt = mutableMapOf<String, Long>()
+        val event = UsageEvents.Event()
+
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            val timestamp = event.timeStamp.coerceIn(fromMs, toMs)
+            when (event.eventType) {
+                UsageEvents.Event.FOREGROUND_SERVICE_START ->
+                    openedAt.putIfAbsent(event.packageName, timestamp)
+
+                UsageEvents.Event.FOREGROUND_SERVICE_STOP -> {
+                    val start = openedAt.remove(event.packageName) ?: fromMs
+                    if (timestamp > start) {
+                        intervals += ForegroundInterval(event.packageName, start, timestamp)
+                    }
+                }
+            }
+        }
+
+        // Serviço que continua ativo agora é fechado no fim da janela.
+        for ((packageName, start) in openedAt) {
+            if (toMs > start) intervals += ForegroundInterval(packageName, start, toMs)
+        }
+
+        return intervals.sortedByDescending { it.durationMs }
     }
 
     /**

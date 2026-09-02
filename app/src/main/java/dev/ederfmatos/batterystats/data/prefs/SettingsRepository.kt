@@ -52,6 +52,10 @@ data class AppSettings(
     val lastNotifiedVersionCode: Long = 0L,
     /** O usuário quer ser avisado de versão nova. */
     val updateNotificationsEnabled: Boolean = true,
+    /** Quando a checagem periódica rodou pela última vez. 0 = nunca rodou. */
+    val lastUpdateCheckMs: Long = 0L,
+    /** O que a última checagem concluiu, para a UI dizer por que não houve notificação. */
+    val lastUpdateCheckResult: String = "",
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("settings")
@@ -86,7 +90,16 @@ class SettingsRepository(context: Context) {
             dynamicColorEnabled = prefs[KEY_DYNAMIC_COLOR] ?: true,
             lastNotifiedVersionCode = prefs[KEY_LAST_NOTIFIED_VERSION] ?: 0L,
             updateNotificationsEnabled = prefs[KEY_UPDATE_NOTIFICATIONS] ?: true,
+            lastUpdateCheckMs = prefs[KEY_LAST_CHECK_MS] ?: 0L,
+            lastUpdateCheckResult = prefs[KEY_LAST_CHECK_RESULT].orEmpty(),
         )
+    }
+
+    suspend fun recordUpdateCheck(atMs: Long, result: String) {
+        store.edit { prefs ->
+            prefs[KEY_LAST_CHECK_MS] = atMs
+            prefs[KEY_LAST_CHECK_RESULT] = result
+        }
     }
 
     suspend fun setLastNotifiedVersionCode(versionCode: Long) {
@@ -157,5 +170,7 @@ class SettingsRepository(context: Context) {
         val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val KEY_LAST_NOTIFIED_VERSION = longPreferencesKey("last_notified_version_code")
         val KEY_UPDATE_NOTIFICATIONS = booleanPreferencesKey("update_notifications")
+        val KEY_LAST_CHECK_MS = longPreferencesKey("last_update_check_ms")
+        val KEY_LAST_CHECK_RESULT = stringPreferencesKey("last_update_check_result")
     }
 }

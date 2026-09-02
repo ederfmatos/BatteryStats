@@ -333,4 +333,16 @@
     <string name="absolute_health_cycles">%1$d ciclos de carga</string>
     <string name="absolute_health_declared_caveat">A capacidade de fábrica vem do power_profile.xml deste aparelho — é declarada pelo fabricante, não medida. A capacidade medida vem do contador de carga durante o carregamento, onde ele anda rápido o bastante para o degrau de quantização não atrapalhar.</string>
     <string name="absolute_health_no_declared">Este aparelho não declara a capacidade de projeto, então não dá para calcular percentual. O mAh medido acima continua válido; compare com a especificação do modelo.</string>
+
+    <string name="update_never_checked">A checagem automática ainda não rodou. Ela roda a cada 6h, só em Wi-Fi e com a bateria acima do mínimo.</string>
+    <string name="update_last_check">Última checagem automática: %1$s — %2$s</string>
+    <string name="elapsed_just_now">agora há pouco</string>
+    <string name="elapsed_minutes">há %1$d min</string>
+    <string name="elapsed_hours">há %1$d h</string>
+
+    <!-- Atividade em segundo plano, por tempo e não por mAh -->
+    <string name="background_title">Serviços ativos com a tela apagada</string>
+    <string name="background_entry">%1$s · %2$s (%3$d%% do tempo)</string>
+    <string name="background_empty">Nenhum app manteve serviço em primeiro plano durante as janelas de tela apagada.</string>
+    <string name="background_explanation">Tempo medido, não consumo atribuído. Um serviço ativo não significa que ele gastou a bateria — significa que ele estava rodando, o que é um fato que dá para conferir.</string>
 </resources>
